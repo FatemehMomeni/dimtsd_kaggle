@@ -23,7 +23,7 @@ def data_helper_bert(data, main_task_name, model_select, tokenizer):
         attention_masks.append(encoded_dict['attention_mask'])
         sent_len.append(sum(encoded_dict['attention_mask']))
 
-    x_all = [input_ids, seg_ids, attention_masks, data[1], data[2]]    
+    x_all = [input_ids, seg_ids, attention_masks, data[1], sent_len, data[2]]    
     return x_all
 
 
