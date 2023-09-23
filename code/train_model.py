@@ -148,11 +148,11 @@ def run_classifier():
                         optimizer.step()
                         train_loss.append(loss.item())
                 else:
-                    for input_ids, seg_ids, atten_masks, target, target2 in trainloader:
+                    for input_ids, seg_ids, atten_masks, target, target2, masks in trainloader:
                         optimizer.zero_grad()
-                        output1 = model(input_ids, seg_ids, atten_masks, train_domain)
+                        output1 = model(input_ids, seg_ids, atten_masks, masks)
                         output2 = output1
-
+                        
                         # 3. proposed AKD
                         output2 = torch.empty(output1.shape).fill_(0.).cuda()
                         for ind in range(len(target2)):
