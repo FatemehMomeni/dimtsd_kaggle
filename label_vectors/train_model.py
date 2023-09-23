@@ -1,7 +1,7 @@
 import torch
 import argparse
 import data_helper as dh
-import modeling, model_eval
+import modeling
 
 
 def run_classifier():
