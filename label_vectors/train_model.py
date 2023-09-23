@@ -1,7 +1,7 @@
 import torch
 import argparse
-import utils.data_helper as dh
-from utils import modeling, model_eval
+import data_helper as dh
+import modeling, model_eval
 
 
 def run_classifier():
