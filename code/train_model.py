@@ -10,8 +10,6 @@ import argparse
 import data_helper as dh
 from transformers import AdamW, BertweetTokenizer, BertTokenizer
 import modeling, model_eval
-# from collections import Counter
-# from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer
 
 
 def run_classifier():
@@ -29,9 +27,10 @@ def run_classifier():
     parser.add_argument("--dropout", type=float, default=0.)
     parser.add_argument("--alpha", type=float, default=0.7)
     parser.add_argument("--theta", type=float, default=0.6, help="AKD parameter")
+    parser.add_argument("--seed", type=int, help="random seed")
     args = parser.parse_args()
 
-    random_seeds = [1]
+    random_seeds = [args.seed]
     target_word_pair = [args.input_target]
     model_select = args.model_select
     col = args.col
@@ -107,7 +106,7 @@ def run_classifier():
             x_test_input_ids, x_test_seg_ids, x_test_atten_masks, y_test, x_test_len, testloader = \
                 dh.data_loader(x_test_all, batch_size, model_select, 'test', model_name)
             
-            v_labels = torch.load('/kaggle/working/dimtsd_kaggle/label_vectors_bertweet32.pt')
+            v_labels = torch.load('/kaggle/working/dimtsd_kaggle/lv_hmask_bert.pt')
             model = modeling.stance_classifier(num_labels, model_select, v_labels, tokenizer).cuda()
             
             for n, p in model.named_parameters():
