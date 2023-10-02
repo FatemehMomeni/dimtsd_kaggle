@@ -1,16 +1,9 @@
 import torch
 from torch.utils.data import TensorDataset, DataLoader
-# from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer, DistilBertTokenizer
 
 
-# BERT/BERTweet tokenizer    
 def data_helper_bert(data, main_task_name, model_select, tokenizer):
     print('Loading data')
-
-    # if model_select == 'Bertweet':
-    #   tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased", normalization=True)
-    # elif model_select == 'Bert':
-    #   tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
 
     input_ids, seg_ids, attention_masks, sent_len = [], [], [], []
     for i in range(len(data[0])):
