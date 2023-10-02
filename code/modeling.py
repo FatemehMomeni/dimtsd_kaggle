@@ -13,7 +13,6 @@ class stance_classifier(nn.Module):
         if model_select == 'Bertweet':            
             self.bert = AutoModel.from_pretrained("vinai/bertweet-base")
         elif model_select == 'Bert':
-            # configuration = BertConfig(max_position_embeddings=512)
             self.bert = BertModel.from_pretrained("bert-base-uncased")
         self.bert.pooler = None
         self.linear = nn.Linear(self.bert.config.hidden_size, self.bert.config.hidden_size)
@@ -27,7 +26,7 @@ class stance_classifier(nn.Module):
         predictions = last_hidden[0]
         prediction_probabilities = list(list())
         for i in range(len(predictions)):          
-          _, predicted_label_id = torch.sort(predictions[i, mask_indices[i]],  descending=True)          
+          _, predicted_label_id = torch.sort(predictions[i, mask_indices[i]],  descending=True)               
           # predicted_label_word = self.tokenizer.convert_ids_to_tokens(predicted_label_id)          
           # encoded_dict = self.tokenizer.encode_plus(predicted_label_word[0], add_special_tokens=True, 
           #                                           max_length=512, padding='max_length',
@@ -36,6 +35,7 @@ class stance_classifier(nn.Module):
           # attention_mask_tensor = torch.tensor(encoded_dict['attention_mask'], dtype=torch.long).cuda()          
           # out0 = self.bert(input_ids=predicted_label_id)
           # out1 = out0[0][:,0]          
+
           temp = list()
           temp.append(torch.dot(predicted_label_id.float(), self.label_vectors[0]))
           temp.append(torch.dot(predicted_label_id.float(), self.label_vectors[1]))
