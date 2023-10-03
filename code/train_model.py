@@ -71,7 +71,7 @@ def run_classifier():
             test_domain = test['mask'].values.tolist()
 
             if model_name == 'student':
-                y_train2 = torch.load('.pt')
+                y_train2 = torch.load('/kaggle/working/dimtsd_kaggle/dot_product_bert_seed1.pt')
                 # y_train2 = torch.load(teacher[dataset_name] + '_seed{}.pt'.format(seed))  # load teacher predictions
 
             num_labels = 3  # Favor, Against and None
