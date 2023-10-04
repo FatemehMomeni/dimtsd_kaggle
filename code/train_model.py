@@ -107,7 +107,7 @@ def run_classifier():
                 dh.data_loader(x_test_all, batch_size, model_select, 'test', model_name)
             
             v_labels = torch.load('/kaggle/working/dimtsd_kaggle/lv_hmask_bert.pt')
-            model = modeling.stance_classifier(num_labels, model_select, v_labels, tokenizer).cuda()
+            model = modeling.stance_classifier(num_labels, model_select, v_labels, tokenizer, batch_size).cuda()
             
             # for n, p in model.named_parameters():
             #     if "bert.embeddings" in n:
