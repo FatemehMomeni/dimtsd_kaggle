@@ -109,10 +109,11 @@ def run_classifier():
             v_labels = torch.load('/kaggle/working/dimtsd_kaggle/lv_hmask_bert.pt')
             model = modeling.stance_classifier(num_labels, model_select, v_labels, tokenizer).cuda()
             
-            for n, p in model.named_parameters():
-                if "bert.embeddings" in n:
-                    p.requires_grad = False
-
+            # for n, p in model.named_parameters():
+            #     if "bert.embeddings" in n:
+            #         p.requires_grad = False
+            model.requires_grad = False
+            
             optimizer_grouped_parameters = [
                 {'params': [p for n, p in model.named_parameters() if n.startswith('bert.encoder')], 'lr': lr},
                 {'params': [p for n, p in model.named_parameters() if n.startswith('bert.pooler')], 'lr': 1e-3},
@@ -141,7 +142,7 @@ def run_classifier():
                         optimizer.zero_grad()
                         output1 = model(input_ids, seg_ids, atten_masks, masks)     
                         loss = loss_function(output1, target)
-                        loss.requires_grad = True
+                        # loss.requires_grad = True
                         loss.backward()
                         nn.utils.clip_grad_norm_(model.parameters(), 1)
                         optimizer.step()
