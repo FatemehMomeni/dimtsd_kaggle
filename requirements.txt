@@ -1,5 +1,5 @@
 preprocessor
-sklearn
+scikit-learn
 torch
 transformers
 wordninja
