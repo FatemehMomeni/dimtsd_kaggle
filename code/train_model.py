@@ -71,7 +71,7 @@ def run_classifier():
             test_domain = test['mask'].values.tolist()
 
             if model_name == 'student':
-                y_train2 = torch.load('/kaggle/working/dimtsd_kaggle/dot_product_bert_seed1.pt')
+                y_train2 = torch.load('/kaggle/working/dot_product_linear_seed1.pt')
                 # y_train2 = torch.load(teacher[dataset_name] + '_seed{}.pt'.format(seed))  # load teacher predictions
 
             num_labels = 3  # Favor, Against and None
@@ -242,7 +242,7 @@ def run_classifier():
 
             if model_name == 'teacher':
                 best_preds = train_preds_distill[best_epoch]
-                torch.save(best_preds, 'dot_product_seed{}.pt'.format(seed))
+                torch.save(best_preds, 'dot_product_linear_seed{}.pt'.format(seed))
 
             print("******************************************")
             print("dev results with seed {} on all epochs".format(seed))
