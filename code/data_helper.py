@@ -3,11 +3,11 @@ from torch.utils.data import TensorDataset, DataLoader
 from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer
     
 
-def convert_data_to_ids(tokenizer, target, text):
+def convert_data_to_ids(tokenizer, text):
     
     input_ids, seg_ids, attention_masks, sent_len = [], [], [], []
-    for text in range(data[0]):
-        prompt = f"{text} Choose the label from these categories: 'favor', 'against', 'none'"
+    for txt in text:
+        prompt = f"{txt} Choose the label from these categories: 'favor', 'against', 'none'"
         encoded_dict = tokenizer.encode_plus(prompt, add_special_tokens = True,
                             max_length = 512, padding = 'max_length',
                             return_attention_mask = True)
@@ -39,11 +39,11 @@ def data_helper_bert(x_train_all,x_val_all,x_test_all,main_task_name,model_selec
 
     # tokenization
     x_train_input_ids, x_train_seg_ids, x_train_atten_masks, x_train_len = \
-                    convert_data_to_ids(tokenizer, x_train_target, x_train)
+                    convert_data_to_ids(tokenizer, x_train)
     x_val_input_ids, x_val_seg_ids, x_val_atten_masks, x_val_len = \
-                    convert_data_to_ids(tokenizer, x_val_target, x_val)
+                    convert_data_to_ids(tokenizer, x_val)
     x_test_input_ids, x_test_seg_ids, x_test_atten_masks, x_test_len = \
-                    convert_data_to_ids(tokenizer, x_test_target, x_test)
+                    convert_data_to_ids(tokenizer, x_test)
     
     x_train_all = [x_train_input_ids,x_train_seg_ids,x_train_atten_masks,y_train,x_train_len]
     x_val_all = [x_val_input_ids,x_val_seg_ids,x_val_atten_masks,y_val,x_val_len]
