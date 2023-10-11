@@ -7,10 +7,10 @@ def convert_data_to_ids(tokenizer, text):
     
     input_ids, seg_ids, attention_masks, sent_len = [], [], [], []
     for txt in text:
-        prompt = f"{txt} Choose the label from these categories: 'favor', 'against', 'none'"
+        prompt = f"{txt[:-1]} from the set 'favor', 'against', 'none'."
         encoded_dict = tokenizer.encode_plus(prompt, add_special_tokens = True,
                             max_length = 512, padding = 'max_length',
-                            return_attention_mask = True,  truncation = True)
+                            return_attention_mask = True)
     
         input_ids.append(encoded_dict['input_ids'])
         seg_ids.append(encoded_dict['token_type_ids'])
