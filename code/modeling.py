@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from transformers import AutoModel, BertModel, BertConfig
+from transformers import AutoModel, BertModel
 
 
 class stance_classifier(nn.Module):
@@ -9,8 +9,7 @@ class stance_classifier(nn.Module):
         self.dropout = nn.Dropout(0.)
         self.relu = nn.ReLU()        
         if model_select == 'Bertweet':
-            configuration = BertConfig(max_position_embeddings=512)            
-            self.bert = AutoModel.from_pretrained("vinai/bertweet-base", configuration)
+            self.bert = AutoModel.from_pretrained("vinai/bertweet-base")
         elif model_select == 'Bert':
             self.bert = BertModel.from_pretrained("bert-base-uncased")
         self.bert.pooler = None
