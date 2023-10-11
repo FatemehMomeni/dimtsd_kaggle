@@ -14,8 +14,8 @@ class stance_classifier(nn.Module):
         elif model_select == 'Bert':
             self.bert = BertModel.from_pretrained("bert-base-uncased")
         self.bert.pooler = None
-        self.linear = nn.Linear(self.bert.config.hidden_size, self.bert.config.hidden_size)
-        self.out = nn.Linear(self.bert.config.hidden_size, num_labels)
+        self.linear = nn.Linear(512, 512)
+        self.out = nn.Linear(512, num_labels)
         
     def forward(self, x_input_ids, x_seg_ids, x_atten_masks, x_len):        
         last_hidden = self.bert(input_ids=x_input_ids, attention_mask=x_atten_masks, token_type_ids=x_seg_ids)
