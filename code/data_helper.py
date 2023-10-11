@@ -30,7 +30,7 @@ def data_helper_bert(x_train_all, x_val_all, x_test_all, main_task_name, model_s
     print("Length of original x_test: %d, the sum is: %d"%(len(x_test), sum(y_test)))
     
     if model_select == 'Bertweet':
-        tokenizer = BertweetTokenizer.from_pretrained("vinai/bertweet-base", normalization=True)
+        tokenizer = BertweetTokenizer.from_pretrained("vinai/bertweet-base", normalization=True, mask_token='[MASK]')
     elif model_select == 'Bert':
         tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
 
