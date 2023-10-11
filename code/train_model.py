@@ -7,9 +7,9 @@ import numpy as np
 import argparse
 import json
 import gc
-import utils.data_helper as dh
+import data_helper as dh
 from transformers import AdamW
-from utils import modeling, model_eval
+import modeling, model_eval
 
 
 def run_classifier():
