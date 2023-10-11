@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import argparse
 import data_helper as dh
-from transformers import AdamW, BertweetTokenizer, BertTokenizer
+from transformers import AdamW
 import modeling, model_eval
 
 
@@ -80,15 +80,10 @@ def run_classifier():
             np.random.seed(seed)
             torch.manual_seed(seed)
 
-            if model_select == 'Bertweet':
-              tokenizer = BertweetTokenizer.from_pretrained("vinai/bertweet-base", normalization=True)
-            elif model_select == 'Bert':
-              tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
-
             # prepare for model
-            x_train_all = dh.data_helper_bert(train, target_word_pair[target_index], model_select, tokenizer)
-            x_val_all = dh.data_helper_bert(val, target_word_pair[target_index], model_select, tokenizer)
-            x_test_all = dh.data_helper_bert(test, target_word_pair[target_index], model_select, tokenizer)
+            x_train_all = dh.data_helper_bert(train, target_word_pair[target_index], model_select)
+            x_val_all = dh.data_helper_bert(val, target_word_pair[target_index], model_select)
+            x_test_all = dh.data_helper_bert(test, target_word_pair[target_index], model_select)
 
             if model_name == 'teacher':
                 x_train_input_ids, x_train_seg_ids, x_train_atten_masks, y_train, x_train_len, trainloader, \
@@ -132,18 +127,18 @@ def run_classifier():
                 train_loss, train_loss2 = [], []
                 model.train()
                 if model_name == 'teacher':
-                    for input_ids, seg_ids, atten_masks, target in trainloader:
+                    for input_ids, seg_ids, atten_masks, target, length in trainloader:
                         optimizer.zero_grad()
-                        output1 = model(input_ids, seg_ids, atten_masks)     
+                        output1 = model(input_ids, seg_ids, atten_masks, length)     
                         loss = loss_function(output1, target)
                         loss.backward()
                         nn.utils.clip_grad_norm_(model.parameters(), 1)
                         optimizer.step()
                         train_loss.append(loss.item())
                 else:
-                    for input_ids, seg_ids, atten_masks, target, target2 in trainloader:
+                    for input_ids, seg_ids, atten_masks, target, length, target2 in trainloader:
                         optimizer.zero_grad()
-                        output1 = model(input_ids, seg_ids, atten_masks)
+                        output1 = model(input_ids, seg_ids, atten_masks, length)
                         output2 = output1
                         
                         # 3. proposed AKD
@@ -179,8 +174,8 @@ def run_classifier():
                     model.eval()
                     train_preds = []
                     with torch.no_grad():
-                        for input_ids, seg_ids, atten_masks, target in trainloader_distill:
-                            output1 = model(input_ids, seg_ids, atten_masks)
+                        for input_ids, seg_ids, atten_masks, target, length in trainloader_distill:
+                            output1 = model(input_ids, seg_ids, atten_masks, length)
                             train_preds.append(output1)
                         preds = torch.cat(train_preds, 0)
                         train_preds_distill.append(preds)
@@ -193,8 +188,8 @@ def run_classifier():
                     if not eval_batch[dataset_name]:
                         pred1 = model(x_val_input_ids, x_val_atten_masks)
                     else:
-                        for input_ids, seg_ids, atten_masks, target in valloader:
-                            pred1 = model(input_ids, seg_ids, atten_masks)  # unified
+                        for input_ids, seg_ids, atten_masks, target, length in valloader:
+                            pred1 = model(input_ids, seg_ids, atten_masks, length)  # unified
                             val_preds.append(pred1)
                         pred1 = torch.cat(val_preds, 0)
                     acc, f1_average, precision, recall = model_eval.compute_f1(pred1, y_val)
@@ -211,8 +206,8 @@ def run_classifier():
                 with torch.no_grad():
                     if eval_batch[dataset_name]:
                         test_preds = []
-                        for input_ids, seg_ids, atten_masks, target in testloader:
-                            pred1 = model(input_ids, seg_ids, atten_masks)
+                        for input_ids, seg_ids, atten_masks, target, length in testloader:
+                            pred1 = model(input_ids, seg_ids, atten_masks, length)
                             test_preds.append(pred1)
                         pred1 = torch.cat(test_preds, 0)
                         if train_mode == "unified":
