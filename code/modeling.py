@@ -5,7 +5,7 @@ from transformers import AutoModel, BertModel
 
 class stance_classifier(nn.Module):
     def __init__(self,num_labels,model_select):
-        super(stance_classifier, self).__init__()    
+        super(stance_classifier, self).__init__()        
         self.dropout = nn.Dropout(0.)
         self.relu = nn.ReLU()
         
