@@ -17,10 +17,10 @@ class stance_classifier(nn.Module):
         self.out = nn.Linear(self.bert.config.hidden_size, num_labels)
         
     def forward(self, x_input_ids, x_seg_ids, x_atten_masks, x_len):        
-        print('==='*100)
-        print(x_input_ids)
-        print(x_seg_ids)
-        print(x_atten_masks)
+        print('==='*10)
+        print(x_input_ids.size())
+        print(x_seg_ids.size())
+        print(x_atten_masks.size())
         last_hidden = self.bert(input_ids=x_input_ids, attention_mask=x_atten_masks, token_type_ids=x_seg_ids)
         
         cls = last_hidden[0][:,0]
