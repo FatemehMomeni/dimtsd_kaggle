@@ -124,11 +124,14 @@ def run_classifier():
             for epoch in range(0, total_epoch):
                 print('Epoch:', epoch)
                 train_loss, train_loss2 = [], []
-                model.train()
+                model.train()                
                 if model_name == 'teacher':
+                    counter = 0
                     for input_ids,seg_ids,atten_masks,target,length in trainloader:
                         optimizer.zero_grad()
                         output1 = model(input_ids, seg_ids, atten_masks, length)
+                        print(counter)
+                        counter += 1
                         loss = loss_function(output1, target)
                         loss.backward()
                         nn.utils.clip_grad_norm_(model.parameters(), 1)
