@@ -9,7 +9,7 @@ class stance_classifier(nn.Module):
         self.dropout = nn.Dropout(0.)
         self.relu = nn.ReLU()        
         if model_select == 'Bertweet':
-            self.bert = AutoModel.from_pretrained("vinai/bertweet-base")
+            self.bert = AutoModel.from_pretrained("vinai/bertweet-large")
         elif model_select == 'Bert':
             self.bert = BertModel.from_pretrained("bert-base-uncased")
         self.bert.pooler = None
