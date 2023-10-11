@@ -60,24 +60,20 @@ def run_classifier():
 
             train_txt = train['prompt'].values.tolist()
             y_train = train['stance'].values.tolist()
-            train_domain = train['mask'].values.tolist()
 
             val_txt = validation['prompt'].values.tolist()
             y_val = validation['stance'].values.tolist()
-            val_domain = validation['mask'].values.tolist()
 
             test_txt = test['prompt'].values.tolist()
             y_test = test['stance'].values.tolist()
-            test_domain = test['mask'].values.tolist()
 
             if model_name == 'student':
-                y_train2 = torch.load('/kaggle/working/dot_product_linear_seed1.pt')
-                # y_train2 = torch.load(teacher[dataset_name] + '_seed{}.pt'.format(seed))  # load teacher predictions
+                y_train2 = torch.load('/kaggle/working/category_label_prompt_seed1.pt')
 
             num_labels = 3  # Favor, Against and None
-            train = [train_txt, y_train, train_domain]
-            val = [val_txt, y_val, val_domain]
-            test = [test_txt, y_test, test_domain]
+            train = [train_txt, y_train]
+            val = [val_txt, y_val]
+            test = [test_txt, y_test]
 
             # set up the random seed
             random.seed(seed)
@@ -106,13 +102,11 @@ def run_classifier():
             x_test_input_ids, x_test_seg_ids, x_test_atten_masks, y_test, x_test_len, testloader = \
                 dh.data_loader(x_test_all, batch_size, model_select, 'test', model_name)
             
-            v_labels = torch.load('/kaggle/working/dimtsd_kaggle/lv_hmask_bert.pt')
             model = modeling.stance_classifier(num_labels, model_select, v_labels, tokenizer, batch_size).cuda()
             
-            # for n, p in model.named_parameters():
-            #     if "bert.embeddings" in n:
-            #         p.requires_grad = False
-            model.requires_grad = False
+            for n, p in model.named_parameters():
+                if "bert.embeddings" in n:
+                    p.requires_grad = False
             
             optimizer_grouped_parameters = [
                 {'params': [p for n, p in model.named_parameters() if n.startswith('bert.encoder')], 'lr': lr},
@@ -138,19 +132,18 @@ def run_classifier():
                 train_loss, train_loss2 = [], []
                 model.train()
                 if model_name == 'teacher':
-                    for input_ids, seg_ids, atten_masks, target, masks in trainloader:
+                    for input_ids, seg_ids, atten_masks, target in trainloader:
                         optimizer.zero_grad()
-                        output1 = model(input_ids, seg_ids, atten_masks, masks)     
+                        output1 = model(input_ids, seg_ids, atten_masks)     
                         loss = loss_function(output1, target)
-                        # loss.requires_grad = True
                         loss.backward()
                         nn.utils.clip_grad_norm_(model.parameters(), 1)
                         optimizer.step()
                         train_loss.append(loss.item())
                 else:
-                    for input_ids, seg_ids, atten_masks, target, target2, masks in trainloader:
+                    for input_ids, seg_ids, atten_masks, target, target2 in trainloader:
                         optimizer.zero_grad()
-                        output1 = model(input_ids, seg_ids, atten_masks, masks)
+                        output1 = model(input_ids, seg_ids, atten_masks)
                         output2 = output1
                         
                         # 3. proposed AKD
@@ -186,8 +179,8 @@ def run_classifier():
                     model.eval()
                     train_preds = []
                     with torch.no_grad():
-                        for input_ids, seg_ids, atten_masks, target, masks in trainloader_distill:
-                            output1 = model(input_ids, seg_ids, atten_masks, masks)
+                        for input_ids, seg_ids, atten_masks, target in trainloader_distill:
+                            output1 = model(input_ids, seg_ids, atten_masks)
                             train_preds.append(output1)
                         preds = torch.cat(train_preds, 0)
                         train_preds_distill.append(preds)
@@ -200,8 +193,8 @@ def run_classifier():
                     if not eval_batch[dataset_name]:
                         pred1 = model(x_val_input_ids, x_val_atten_masks)
                     else:
-                        for input_ids, seg_ids, atten_masks, target, masks in valloader:
-                            pred1 = model(input_ids, seg_ids, atten_masks, masks)  # unified
+                        for input_ids, seg_ids, atten_masks, target in valloader:
+                            pred1 = model(input_ids, seg_ids, atten_masks)  # unified
                             val_preds.append(pred1)
                         pred1 = torch.cat(val_preds, 0)
                     acc, f1_average, precision, recall = model_eval.compute_f1(pred1, y_val)
@@ -218,8 +211,8 @@ def run_classifier():
                 with torch.no_grad():
                     if eval_batch[dataset_name]:
                         test_preds = []
-                        for input_ids, seg_ids, atten_masks, target, masks in testloader:
-                            pred1 = model(input_ids, seg_ids, atten_masks, masks)
+                        for input_ids, seg_ids, atten_masks, target in testloader:
+                            pred1 = model(input_ids, seg_ids, atten_masks)
                             test_preds.append(pred1)
                         pred1 = torch.cat(test_preds, 0)
                         if train_mode == "unified":
@@ -242,7 +235,7 @@ def run_classifier():
 
             if model_name == 'teacher':
                 best_preds = train_preds_distill[best_epoch]
-                torch.save(best_preds, 'dot_product_linear_seed{}.pt'.format(seed))
+                torch.save(best_preds, 'category_label_prompt_seed{}.pt'.format(seed))
 
             print("******************************************")
             print("dev results with seed {} on all epochs".format(seed))
