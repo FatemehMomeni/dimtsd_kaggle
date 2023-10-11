@@ -3,14 +3,13 @@ from torch.utils.data import TensorDataset, DataLoader
 from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer
     
 
-def convert_data_to_ids(tokenizer, text):
-    
+def convert_data_to_ids(tokenizer, text):    
     input_ids, seg_ids, attention_masks, sent_len = [], [], [], []
     for txt in text:
-        prompt = f"{txt[:-1]} from the set 'favor', 'against', 'none'."
+        prompt = f"{txt[:-1]} from the set 'favor', 'against', 'none'."        
         encoded_dict = tokenizer.encode_plus(prompt, add_special_tokens = True,
                             max_length = 512, padding = 'max_length',
-                            return_attention_mask = True)
+                            return_attention_mask = True,)
     
         input_ids.append(encoded_dict['input_ids'])
         seg_ids.append(encoded_dict['token_type_ids'])
@@ -20,8 +19,7 @@ def convert_data_to_ids(tokenizer, text):
     return input_ids, seg_ids, attention_masks, sent_len
 
 
-def data_helper_bert(x_train_all,x_val_all,x_test_all,main_task_name,model_select):
-    
+def data_helper_bert(x_train_all, x_val_all, x_test_all, main_task_name, model_select):    
     print('Loading data')
     
     x_train, y_train = x_train_all[0], x_train_all[1]
@@ -31,19 +29,14 @@ def data_helper_bert(x_train_all,x_val_all,x_test_all,main_task_name,model_selec
     print("Length of original x_val: %d, the sum is: %d"%(len(x_val), sum(y_val)))
     print("Length of original x_test: %d, the sum is: %d"%(len(x_test), sum(y_test)))
     
-    # get the tokenizer
     if model_select == 'Bertweet':
         tokenizer = BertweetTokenizer.from_pretrained("vinai/bertweet-base", normalization=True)
     elif model_select == 'Bert':
         tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
 
-    # tokenization
-    x_train_input_ids, x_train_seg_ids, x_train_atten_masks, x_train_len = \
-                    convert_data_to_ids(tokenizer, x_train)
-    x_val_input_ids, x_val_seg_ids, x_val_atten_masks, x_val_len = \
-                    convert_data_to_ids(tokenizer, x_val)
-    x_test_input_ids, x_test_seg_ids, x_test_atten_masks, x_test_len = \
-                    convert_data_to_ids(tokenizer, x_test)
+    x_train_input_ids, x_train_seg_ids, x_train_atten_masks, x_train_len = convert_data_to_ids(tokenizer, x_train)
+    x_val_input_ids, x_val_seg_ids, x_val_atten_masks, x_val_len = convert_data_to_ids(tokenizer, x_val)
+    x_test_input_ids, x_test_seg_ids, x_test_atten_masks, x_test_len = convert_data_to_ids(tokenizer, x_test)
     
     x_train_all = [x_train_input_ids,x_train_seg_ids,x_train_atten_masks,y_train,x_train_len]
     x_val_all = [x_val_input_ids,x_val_seg_ids,x_val_atten_masks,y_val,x_val_len]
@@ -55,8 +48,7 @@ def data_helper_bert(x_train_all,x_val_all,x_test_all,main_task_name,model_selec
     return x_train_all,x_val_all,x_test_all
 
 
-def data_loader(x_all, batch_size, model_select, mode, model_name, **kwargs):
-    
+def data_loader(x_all, batch_size, model_select, mode, model_name, **kwargs):    
     x_input_ids = torch.tensor(x_all[0], dtype=torch.long).cuda()
     x_seg_ids = torch.tensor(x_all[1], dtype=torch.long).cuda()
     x_atten_masks = torch.tensor(x_all[2], dtype=torch.long).cuda()
@@ -72,11 +64,9 @@ def data_loader(x_all, batch_size, model_select, mode, model_name, **kwargs):
     if mode == 'train':
         data_loader = DataLoader(tensor_loader, shuffle=True, batch_size=batch_size)
         data_loader_distill = DataLoader(tensor_loader, shuffle=False, batch_size=batch_size)
-
         return x_input_ids, x_seg_ids, x_atten_masks, y, x_len, data_loader, data_loader_distill
     else:
         data_loader = DataLoader(tensor_loader, shuffle=False, batch_size=batch_size)
-
         return x_input_ids, x_seg_ids, x_atten_masks, y, x_len, data_loader
 
 
