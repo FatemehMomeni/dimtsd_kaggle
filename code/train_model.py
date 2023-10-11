@@ -81,10 +81,8 @@ def run_classifier():
             torch.manual_seed(seed)
 
             # prepare for model
-            x_train_all = dh.data_helper_bert(train, target_word_pair[target_index], model_select)
-            x_val_all = dh.data_helper_bert(val, target_word_pair[target_index], model_select)
-            x_test_all = dh.data_helper_bert(test, target_word_pair[target_index], model_select)
-
+            x_train_all, x_val_all, x_test_all = dh.data_helper_bert(train, val, test, target_word_pair[target_index], model_select)
+            
             if model_name == 'teacher':
                 x_train_input_ids, x_train_seg_ids, x_train_atten_masks, y_train, x_train_len, trainloader, \
                     trainloader_distill = dh.data_loader(x_train_all, batch_size, model_select, 'train', model_name)                
