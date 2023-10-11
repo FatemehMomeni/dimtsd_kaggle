@@ -32,7 +32,7 @@ def data_helper_bert(x_train_all, x_val_all, x_test_all, main_task_name, model_s
     if model_select == 'Bertweet':
         tokenizer = BertweetTokenizer.from_pretrained("vinai/bertweet-base", normalization=True, mask_token='[MASK]')
     elif model_select == 'Bert':
-        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
+        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True, mask_token='[MASK]')
 
     x_train_input_ids, x_train_seg_ids, x_train_atten_masks, x_train_len = convert_data_to_ids(tokenizer, x_train)
     x_val_input_ids, x_val_seg_ids, x_val_atten_masks, x_val_len = convert_data_to_ids(tokenizer, x_val)
