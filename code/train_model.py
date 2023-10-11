@@ -59,13 +59,13 @@ def run_classifier():
             validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/val_mask_id.csv', encoding='ISO-8859-1')
             test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test_mask_id.csv', encoding='ISO-8859-1')
 
-            train_txt = train['prompt'].values.tolist()
+            x_train = train['prompt'].values.tolist()
             y_train = train['stance'].values.tolist()
 
-            val_txt = validation['prompt'].values.tolist()
+            x_val = validation['prompt'].values.tolist()
             y_val = validation['stance'].values.tolist()
 
-            test_txt = test['prompt'].values.tolist()
+            x_test = test['prompt'].values.tolist()
             y_test = test['stance'].values.tolist()
 
             if model_name == 'student':
