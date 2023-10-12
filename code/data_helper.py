@@ -8,8 +8,8 @@ def convert_data_to_ids(tokenizer, text):
     for txt in text:
         prompt = f"{txt[:-1]} from the set 'favor', 'against', 'none'."        
         encoded_dict = tokenizer.encode_plus(prompt, add_special_tokens = True,
-                            max_length = 512, padding = 'max_length',
-                            return_attention_mask = True,)
+                            max_length = 128, padding = 'max_length',
+                            return_attention_mask = True, truncation=True)
     
         input_ids.append(encoded_dict['input_ids'])
         seg_ids.append(encoded_dict['token_type_ids'])
