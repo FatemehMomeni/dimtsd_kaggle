@@ -107,7 +107,7 @@ def run_classifier():
             x_test_input_ids, x_test_seg_ids, x_test_atten_masks, y_test, x_test_len, testloader = \
                                         dh.data_loader(x_test_all, batch_size, model_select, 'test',model_name)
 
-            model = modeling.stance_classifier(num_labels,model_select).cuda()
+            model = error_analysis_model.stance_classifier(num_labels,model_select).cuda()
 
             for n,p in model.named_parameters():
                 if "bert.embeddings" in n:
