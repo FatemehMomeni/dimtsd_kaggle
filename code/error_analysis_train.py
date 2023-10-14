@@ -82,7 +82,7 @@ def run_classifier():
             x_test_rel3 = test['RelatedTarget3'].values.to_list()
 
             if model_name == 'student':
-                y_train2 = torch.load('/kaggle/working/error_seed{}.pt'.format(seed))  # load teacher predictions
+                y_train2 = torch.load('/kaggle/working/sep_seed{}.pt'.format(seed))  # load teacher predictions
 
             num_labels = 3  # Favor, Against and None
             x_train_all = [x_train,y_train,x_train_target, x_train_rel1, x_train_rel2, x_train_rel3]
@@ -207,8 +207,7 @@ def run_classifier():
                     val_f1_average.append(f1_average)
 
                 # evaluation on test set
-                error_input, error_stance, error_predict = [], [], []
-                flag = True
+                error_input, error_stance, error_predict = [], [], []                
                 if train_mode == "unified":
                     x_test_len_list = dh.sep_test_set(x_test_len,dataset_name)
                     y_test_list = dh.sep_test_set(y_test,dataset_name)
@@ -221,19 +220,12 @@ def run_classifier():
                         test_preds = []
                         for input_ids,seg_ids,atten_masks,target,length in testloader:
                             pred1 = model(input_ids, seg_ids, atten_masks, length)
-                            test_preds.append(pred1)           
-                            if flag:
-                              error_input.append(input_ids)
-                              error_stance.append(target)
-                              error_prediction.append(test_preds)
-                              flag = False
+                            test_preds.append(pred1)                                       
                         pred1 = torch.cat(test_preds, 0)
                         if train_mode == "unified":
                             pred1_list = dh.sep_test_set(pred1,dataset_name)                        
                         
-                  error_df = pd.DataFrame([error_input, error_stance, error_prediction], columns=['input', 'stance', 'prediction'])
-                  error_df.to_csv('/kaggle/working/error_analysis.csv', index=False)
-                  test_preds = []
+                    test_preds = []
                     for ind in range(len(y_test_list)):
                         if not eval_batch[dataset_name]:
                             pred1 = model(x_test_input_ids_list[ind], x_test_seg_ids_list[ind], \
@@ -250,7 +242,7 @@ def run_classifier():
             
             if model_name == 'teacher':
                 best_preds = train_preds_distill[best_epoch]
-                torch.save(best_preds, 'error_seed{}.pt'.format(seed))
+                torch.save(best_preds, 'sep_seed{}.pt'.format(seed))
 
             print("******************************************")
             print("dev results with seed {} on all epochs".format(seed))
