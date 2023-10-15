@@ -85,7 +85,7 @@ def run_classifier():
             x_test_domain = test['domain'].values.tolist()
 
             if model_name == 'student':
-                y_train2 = torch.load('/kaggle/working/sep_domain_seed1.pt')  # load teacher predictions
+                y_train2 = torch.load('/kaggle/working/sep_txt_domain_seed1.pt')  # load teacher predictions
 
             num_labels = 3  # Favor, Against and None
             x_train_all = [x_train,y_train,x_train_target, x_train_rel1, x_train_rel2, x_train_rel3, x_train_domain]
@@ -243,7 +243,7 @@ def run_classifier():
             
             if model_name == 'teacher':
                 best_preds = train_preds_distill[best_epoch]
-                torch.save(best_preds, 'sep_domain_seed{}.pt'.format(seed))
+                torch.save(best_preds, 'sep_txt_domain_seed{}.pt'.format(seed))
 
             print("******************************************")
             print("dev results with seed {} on all epochs".format(seed))
