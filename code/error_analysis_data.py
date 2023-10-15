@@ -6,7 +6,8 @@ from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer
 def convert_data_to_ids(tokenizer, target, rel1, rel2, rel3, text, domain):    
     input_ids, seg_ids, attention_masks, sent_len = [], [], [], []
     for i in range(len(target)):
-        target[i] = f"{target[i]} [SEP] {rel1[i]} [SEP] {rel2[i]} [SEP] {rel3[i]} [SEP] {domain[i]}"        
+        target[i] = f"{target[i]} [SEP] {rel1[i]} [SEP] {rel2[i]} [SEP] {rel3[i]}"       
+        text[i] = f"{text[i]} [SEP] {domain[i]}"
     for tar, sent in zip(target, text):
         encoded_dict = tokenizer.encode_plus(tar, sent, add_special_tokens = True,
                             max_length = 128, padding = 'max_length',
