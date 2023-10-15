@@ -55,9 +55,9 @@ def run_classifier():
         best_result, best_val = [], []
         for seed in random_seeds:    
             print("current random seed: ", seed)
-            train = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train_mask_id.csv', encoding='ISO-8859-1')
-            validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/val_mask_id.csv', encoding='ISO-8859-1')
-            test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test_mask_id.csv', encoding='ISO-8859-1')
+            train = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train_pro_extend_no_tars.csv', encoding='ISO-8859-1')
+            validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/val_pro_extend_no_tars.csv', encoding='ISO-8859-1')
+            test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test_pro_extend_no_tars.csv', encoding='ISO-8859-1')
 
             x_train = train['prompt'].values.tolist()
             y_train = train['stance'].values.tolist()
@@ -69,7 +69,7 @@ def run_classifier():
             y_test = test['stance'].values.tolist()
 
             if model_name == 'student':
-                y_train2 = torch.load('/kaggle/working/category_label_prompt_seed1.pt')
+                y_train2 = torch.load('/kaggle/working/pro_extend_no_tars_seed1.pt')
 
             num_labels = 3  # Favor, Against and None
             x_train_all = [x_train, y_train]
@@ -117,9 +117,7 @@ def run_classifier():
             val_f1_average = []
             train_preds_distill,train_cls_distill = [], []
             if train_mode == "unified":
-                test_f1_average = [[] for i in range(target_num[dataset_name])]
-            elif train_mode == "adhoc":
-                test_f1_average = [[]]
+                test_f1_average = [[] for i in range(target_num[dataset_name])]           
             
             for epoch in range(0, total_epoch):
                 print('Epoch:', epoch)
@@ -200,11 +198,6 @@ def run_classifier():
                     x_test_input_ids_list = dh.sep_test_set(x_test_input_ids,dataset_name)
                     x_test_seg_ids_list = dh.sep_test_set(x_test_seg_ids,dataset_name)
                     x_test_atten_masks_list = dh.sep_test_set(x_test_atten_masks,dataset_name)
-                elif train_mode == "adhoc":
-                    x_test_len_list = [x_test_len]
-                    y_test_list = [y_test]
-                    x_test_input_ids_list, x_test_seg_ids_list, x_test_atten_masks_list = \
-                                    [x_test_input_ids], [x_test_seg_ids], [x_test_atten_masks]
                 
                 with torch.no_grad():
                     if eval_batch[dataset_name]:
@@ -235,7 +228,7 @@ def run_classifier():
             
             if model_name == 'teacher':
                 best_preds = train_preds_distill[best_epoch]
-                torch.save(best_preds, 'category_label_prompt_seed{}.pt'.format(seed))
+                torch.save(best_preds, 'pro_extend_no_tars_seed{}.pt'.format(seed))
 
             print("******************************************")
             print("dev results with seed {} on all epochs".format(seed))
