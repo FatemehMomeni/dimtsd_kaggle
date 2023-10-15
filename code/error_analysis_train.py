@@ -82,7 +82,7 @@ def run_classifier():
             x_test_rel3 = test['RelatedTarget3'].values.tolist()
 
             if model_name == 'student':
-                y_train2 = torch.load('/kaggle/working/sep_seed{}.pt'.format(seed))  # load teacher predictions
+                y_train2 = torch.load('/kaggle/input/sep-seed1.pt')  # load teacher predictions
 
             num_labels = 3  # Favor, Against and None
             x_train_all = [x_train,y_train,x_train_target, x_train_rel1, x_train_rel2, x_train_rel3]
