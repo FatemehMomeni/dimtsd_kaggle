@@ -66,6 +66,7 @@ def run_classifier():
             x_train_rel1 = train['RelatedTarget1'].values.tolist()
             x_train_rel2 = train['RelatedTarget2'].values.tolist()
             x_train_rel3 = train['RelatedTarget3'].values.tolist()
+            x_train_domain = train['domain'].values.tolist()
             
             x_val = val['Tweet'].values.tolist()
             x_val_target = val['Target'].values.tolist()
@@ -73,6 +74,7 @@ def run_classifier():
             x_val_rel1 = val['RelatedTarget1'].values.tolist()
             x_val_rel2 = val['RelatedTarget2'].values.tolist()
             x_val_rel3 = val['RelatedTarget3'].values.tolist()
+            x_val_domain = val['domain'].values.tolist()
             
             x_test = test['Tweet'].values.tolist()
             x_test_target = test['Target'].values.tolist()
@@ -80,14 +82,15 @@ def run_classifier():
             x_test_rel1 = test['RelatedTarget1'].values.tolist()
             x_test_rel2 = test['RelatedTarget2'].values.tolist()
             x_test_rel3 = test['RelatedTarget3'].values.tolist()
+            x_test_domain = test['domain'].values.tolist()
 
             if model_name == 'student':
-                y_train2 = torch.load('/kaggle/input/sep-seed1.pt')  # load teacher predictions
+                y_train2 = torch.load('/kaggle/working/sep_domain_seed1.pt')  # load teacher predictions
 
             num_labels = 3  # Favor, Against and None
-            x_train_all = [x_train,y_train,x_train_target, x_train_rel1, x_train_rel2, x_train_rel3]
-            x_val_all = [x_val,y_val,x_val_target, x_val_rel1, x_val_rel2, x_val_rel3]
-            x_test_all = [x_test,y_test,x_test_target, x_test_rel1, x_test_rel2, x_test_rel3]
+            x_train_all = [x_train,y_train,x_train_target, x_train_rel1, x_train_rel2, x_train_rel3, x_train_domain]
+            x_val_all = [x_val,y_val,x_val_target, x_val_rel1, x_val_rel2, x_val_rel3, x_val_domain]
+            x_test_all = [x_test,y_test,x_test_target, x_test_rel1, x_test_rel2, x_test_rel3, x_test_domain]
             
             random.seed(seed)
             np.random.seed(seed)
@@ -130,9 +133,7 @@ def run_classifier():
             val_f1_average = []
             train_preds_distill,train_cls_distill = [], []
             if train_mode == "unified":
-                test_f1_average = [[] for i in range(target_num[dataset_name])]
-            elif train_mode == "adhoc":
-                test_f1_average = [[]]
+                test_f1_average = [[] for i in range(target_num[dataset_name])]            
             
             for epoch in range(0, total_epoch):
                 print('Epoch:', epoch)
@@ -242,7 +243,7 @@ def run_classifier():
             
             if model_name == 'teacher':
                 best_preds = train_preds_distill[best_epoch]
-                torch.save(best_preds, 'sep_seed{}.pt'.format(seed))
+                torch.save(best_preds, 'sep_domain_seed{}.pt'.format(seed))
 
             print("******************************************")
             print("dev results with seed {} on all epochs".format(seed))
