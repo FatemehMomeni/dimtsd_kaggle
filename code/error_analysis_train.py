@@ -8,9 +8,9 @@ import pandas as pd
 import argparse
 import json
 import gc
-import error_analysis_data as dh
+import data_helper as dh
 from transformers import AdamW
-import error_analysis_model, model_eval
+import modeling, model_eval
 
 
 def run_classifier():
@@ -29,7 +29,7 @@ def run_classifier():
     parser.add_argument("--dropout", type=float, default=0.)
     parser.add_argument("--alpha", type=float, default=0.7)
     parser.add_argument("--theta", type=float, default=0.6, help="AKD parameter")
-    parser.add_argument("--seed", type=int)
+    parser.add_argument("--seed", type=int, help="random seed")
     args = parser.parse_args()
 
     random_seeds = [args.seed]
@@ -47,7 +47,7 @@ def run_classifier():
     alpha = args.alpha
     theta = args.theta
     
-    teacher = {'all':'teacher_output_all_batch'}
+    teacher = {'all': 'teacher_output_all_batch'}
     target_num = {'all': 3}
     eval_batch = {'all': True}
 
@@ -55,49 +55,33 @@ def run_classifier():
         best_result, best_val = [], []
         for seed in random_seeds:    
             print("current random seed: ", seed)
+            train = pd.read_csv('/content/dimtsd_kaggle/dataset/train_pro_extend_no_tars.csv', encoding='ISO-8859-1')
+            validation = pd.read_csv('/content/dimtsd_kaggle/dataset/val_pro_extend_no_tars.csv', encoding='ISO-8859-1')
+            test = pd.read_csv('/content/dimtsd_kaggle/dataset/test_pro_extend_no_tars.csv', encoding='ISO-8859-1')
 
-            train = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train_domain.csv')
-            val = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/val_domain.csv')
-            test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test_domain.csv')
-                
-            x_train = train['Tweet'].values.tolist()
-            x_train_target = train['Target'].values.tolist()
-            y_train = train['Stance'].values.tolist()
-            x_train_rel1 = train['RelatedTarget1'].values.tolist()
-            x_train_rel2 = train['RelatedTarget2'].values.tolist()
-            x_train_rel3 = train['RelatedTarget3'].values.tolist()
-            x_train_domain = train['domain'].values.tolist()
-            
-            x_val = val['Tweet'].values.tolist()
-            x_val_target = val['Target'].values.tolist()
-            y_val = val['Stance'].values.tolist()
-            x_val_rel1 = val['RelatedTarget1'].values.tolist()
-            x_val_rel2 = val['RelatedTarget2'].values.tolist()
-            x_val_rel3 = val['RelatedTarget3'].values.tolist()
-            x_val_domain = val['domain'].values.tolist()
-            
-            x_test = test['Tweet'].values.tolist()
-            x_test_target = test['Target'].values.tolist()
-            y_test = test['Stance'].values.tolist()
-            x_test_rel1 = test['RelatedTarget1'].values.tolist()
-            x_test_rel2 = test['RelatedTarget2'].values.tolist()
-            x_test_rel3 = test['RelatedTarget3'].values.tolist()
-            x_test_domain = test['domain'].values.tolist()
+            x_train = train['prompt'].values.tolist()
+            y_train = train['stance'].values.tolist()
+
+            x_val = validation['prompt'].values.tolist()
+            y_val = validation['stance'].values.tolist()
+
+            x_test = test['prompt'].values.tolist()
+            y_test = test['stance'].values.tolist()
 
             if model_name == 'student':
-                y_train2 = torch.load('/kaggle/working/sep_txt_domain_seed1.pt')  # load teacher predictions
+                y_train2 = torch.load('/content/pro_extend_no_tars_error_seed1.pt')
 
             num_labels = 3  # Favor, Against and None
-            x_train_all = [x_train,y_train,x_train_target, x_train_rel1, x_train_rel2, x_train_rel3, x_train_domain]
-            x_val_all = [x_val,y_val,x_val_target, x_val_rel1, x_val_rel2, x_val_rel3, x_val_domain]
-            x_test_all = [x_test,y_test,x_test_target, x_test_rel1, x_test_rel2, x_test_rel3, x_test_domain]
+            x_train_all = [x_train, y_train]
+            x_val_all = [x_val, y_val]
+            x_test_all = [x_test, y_test]
             
             random.seed(seed)
             np.random.seed(seed)
             torch.manual_seed(seed) 
 
-            x_train_all,x_val_all,x_test_all = dh.data_helper_bert(x_train_all,x_val_all,x_test_all,\
-                                        target_word_pair[target_index],model_select)
+            x_train_all, x_val_all, x_test_all, tokenizer = dh.data_helper_bert(x_train_all,x_val_all,x_test_all, target_word_pair[target_index],model_select)
+            
             if model_name == 'teacher':
                 x_train_input_ids, x_train_seg_ids, x_train_atten_masks, y_train, x_train_len, trainloader, \
                   trainloader_distill = dh.data_loader(x_train_all, batch_size, model_select, 'train', model_name)
@@ -110,7 +94,7 @@ def run_classifier():
             x_test_input_ids, x_test_seg_ids, x_test_atten_masks, y_test, x_test_len, testloader = \
                                         dh.data_loader(x_test_all, batch_size, model_select, 'test',model_name)
 
-            model = error_analysis_model.stance_classifier(num_labels,model_select).cuda()
+            model = modeling.stance_classifier(num_labels,model_select).cuda()
 
             for n,p in model.named_parameters():
                 if "bert.embeddings" in n:
@@ -138,11 +122,11 @@ def run_classifier():
             for epoch in range(0, total_epoch):
                 print('Epoch:', epoch)
                 train_loss, train_loss2 = [], []
-                model.train()
+                model.train()                
                 if model_name == 'teacher':
-                    for input_ids,seg_ids,atten_masks,target,length in trainloader:
+                    for input_ids,seg_ids,atten_masks,target,length in trainloader:                                                       
                         optimizer.zero_grad()
-                        output1 = model(input_ids, seg_ids, atten_masks, length)
+                        output1 = model(input_ids, seg_ids, atten_masks, length)                        
                         loss = loss_function(output1, target)
                         loss.backward()
                         nn.utils.clip_grad_norm_(model.parameters(), 1)
@@ -184,47 +168,59 @@ def run_classifier():
                 if model_name == 'teacher':
                     # train evaluation
                     model.eval()
-                    train_preds = []
+                    train_preds = []                    
                     with torch.no_grad():
                         for input_ids,seg_ids,atten_masks,target,length in trainloader_distill:
                             output1 = model(input_ids, seg_ids, atten_masks, length)
-                            train_preds.append(output1)
+                            train_preds.append(output1)                         
                         preds = torch.cat(train_preds, 0)
                         train_preds_distill.append(preds)
                         print("The size of train_preds is: ", preds.size())
 
                 # evaluation on val set 
                 model.eval()
-                val_preds = []
+                val_preds = []                
                 with torch.no_grad():
                     if not eval_batch[dataset_name]:
                         pred1 = model(x_val_input_ids, x_val_seg_ids, x_val_atten_masks, x_val_len)
                     else:
                         for input_ids,seg_ids,atten_masks,target,length in valloader:
                             pred1 = model(input_ids, seg_ids, atten_masks, length) # unified
-                            val_preds.append(pred1)
-                        pred1 = torch.cat(val_preds, 0)
+                            val_preds.append(pred1)                            
+                        pred1 = torch.cat(val_preds, 0)                        
                     acc, f1_average, precision, recall = model_eval.compute_f1(pred1,y_val)
                     val_f1_average.append(f1_average)
 
                 # evaluation on test set
-                error_input, error_stance, error_predict = [], [], []                
                 if train_mode == "unified":
                     x_test_len_list = dh.sep_test_set(x_test_len,dataset_name)
                     y_test_list = dh.sep_test_set(y_test,dataset_name)
                     x_test_input_ids_list = dh.sep_test_set(x_test_input_ids,dataset_name)
                     x_test_seg_ids_list = dh.sep_test_set(x_test_seg_ids,dataset_name)
-                    x_test_atten_masks_list = dh.sep_test_set(x_test_atten_masks,dataset_name)
+                    x_test_atten_masks_list = dh.sep_test_set(x_test_atten_masks,dataset_name)                
                 
+                batch_counter = 0                
                 with torch.no_grad():
                     if eval_batch[dataset_name]:
                         test_preds = []
                         for input_ids,seg_ids,atten_masks,target,length in testloader:
                             pred1 = model(input_ids, seg_ids, atten_masks, length)
-                            test_preds.append(pred1)                                       
+                            test_preds.append(pred1)
+                            if batch_counter == 42:
+                              error_input = tokenizer.batch_decode(input_ids, skip_special_tokens=True)
+                              error_stance = target.tolist()
+                              error_predict = pred1   
+                              batch_counter += 1
+                            elif batch_counter < 42:
+                              batch_counter += 1
                         pred1 = torch.cat(test_preds, 0)
+                        rounded_preds = torch.nn.functional.softmax(error_predict)
+                        _, indices = torch.max(rounded_preds, 1)
+                        indices = indices.tolist()
+                        error_df = pd.DataFrame({'input': error_input, 'stance': error_stance, 'prediction': indices})
+                        error_df.to_csv('/content/pro_extend_no_tars_error.csv', index=False)                    
                         if train_mode == "unified":
-                            pred1_list = dh.sep_test_set(pred1,dataset_name)                        
+                            pred1_list = dh.sep_test_set(pred1,dataset_name)
                         
                     test_preds = []
                     for ind in range(len(y_test_list)):
@@ -243,7 +239,7 @@ def run_classifier():
             
             if model_name == 'teacher':
                 best_preds = train_preds_distill[best_epoch]
-                torch.save(best_preds, 'sep_txt_domain_seed{}.pt'.format(seed))
+                torch.save(best_preds, 'pro_extend_no_tars_error_seed{}.pt'.format(seed))
 
             print("******************************************")
             print("dev results with seed {} on all epochs".format(seed))
@@ -256,6 +252,6 @@ def run_classifier():
             print(max(best_result))
             print(best_result)
 
-        
+
 if __name__ == "__main__":
     run_classifier()
