@@ -8,9 +8,9 @@ import pandas as pd
 import argparse
 import json
 import gc
-import data_helper as dh
+import error_analysis_data as dh
 from transformers import AdamW
-import modeling, model_eval
+import error_analysis_model, model_eval
 
 
 def run_classifier():
@@ -94,7 +94,7 @@ def run_classifier():
             x_test_input_ids, x_test_seg_ids, x_test_atten_masks, y_test, x_test_len, testloader = \
                                         dh.data_loader(x_test_all, batch_size, model_select, 'test',model_name)
 
-            model = modeling.stance_classifier(num_labels,model_select).cuda()
+            model = error_analysis_model.stance_classifier(num_labels,model_select).cuda()
 
             for n,p in model.named_parameters():
                 if "bert.embeddings" in n:
