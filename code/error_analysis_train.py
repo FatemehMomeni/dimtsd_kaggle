@@ -69,7 +69,7 @@ def run_classifier():
             y_test = test['stance'].values.tolist()
 
             if model_name == 'student':
-                y_train2 = torch.load('/content/pro_extend_no_tars_error_seed1.pt')
+                y_train2 = torch.load('/kaggle/working/pro_extend_no_tars_error_seed1.pt')
 
             num_labels = 3  # Favor, Against and None
             x_train_all = [x_train, y_train]
