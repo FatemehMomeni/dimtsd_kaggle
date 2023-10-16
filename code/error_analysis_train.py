@@ -218,7 +218,7 @@ def run_classifier():
                         _, indices = torch.max(rounded_preds, 1)
                         indices = indices.tolist()
                         error_df = pd.DataFrame({'input': error_input, 'stance': error_stance, 'prediction': indices})
-                        error_df.to_csv('/content/pro_extend_no_tars_error.csv', index=False)                    
+                        error_df.to_csv('pro_extend_no_tars_error.csv', index=False)                    
                         if train_mode == "unified":
                             pred1_list = dh.sep_test_set(pred1,dataset_name)
                         
