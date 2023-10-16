@@ -3,13 +3,10 @@ from torch.utils.data import TensorDataset, DataLoader
 from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer
     
 
-def convert_data_to_ids(tokenizer, target, rel1, rel2, rel3, text, domain):    
-    input_ids, seg_ids, attention_masks, sent_len = [], [], [], []
-    for i in range(len(target)):
-        target[i] = f"{target[i]} [SEP] {rel1[i]} [SEP] {rel2[i]} [SEP] {rel3[i]}"       
-        text[i] = f"{text[i]} [SEP] {domain[i]}"
-    for tar, sent in zip(target, text):
-        encoded_dict = tokenizer.encode_plus(tar, sent, add_special_tokens = True,
+def convert_data_to_ids(tokenizer, text):    
+    input_ids, seg_ids, attention_masks, sent_len = [], [], [], []    
+    for txt in text:
+        encoded_dict = tokenizer.encode_plus(txt, add_special_tokens = True,
                             max_length = 128, padding = 'max_length',
                             return_attention_mask = True, truncation = True)
     
@@ -24,9 +21,9 @@ def convert_data_to_ids(tokenizer, target, rel1, rel2, rel3, text, domain):
 def data_helper_bert(x_train_all,x_val_all,x_test_all,main_task_name,model_select):    
     print('Loading data')
     
-    x_train,y_train,x_train_target, x_train_rel1, x_train_rel2, x_train_rel3, x_train_domain = x_train_all[0],x_train_all[1],x_train_all[2], x_train_all[3], x_train_all[4], x_train_all[5], x_train_all[6]
-    x_val,y_val,x_val_target, x_val_rel1, x_val_rel2, x_val_rel3, x_val_domain = x_val_all[0],x_val_all[1],x_val_all[2], x_val_all[3], x_val_all[4], x_val_all[5], x_val_all[6]
-    x_test,y_test,x_test_target, x_test_rel1, x_test_rel2, x_test_rel3, x_test_domain = x_test_all[0],x_test_all[1],x_test_all[2], x_test_all[3], x_test_all[4], x_test_all[5], x_test_all[6]
+    x_train, y_train = x_train_all[0],x_train_all[1]
+    x_val, y_val = x_val_all[0],x_val_all[1]
+    x_test, y_test = x_test_all[0],x_test_all[1]
     
     print("Length of original x_train: %d"%(len(x_train)))
     print("Length of original x_val: %d, the sum is: %d"%(len(x_val), sum(y_val)))
@@ -38,11 +35,11 @@ def data_helper_bert(x_train_all,x_val_all,x_test_all,main_task_name,model_selec
         tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True)
 
     x_train_input_ids, x_train_seg_ids, x_train_atten_masks, x_train_len = \
-                    convert_data_to_ids(tokenizer, x_train_target, x_train_rel1, x_train_rel2, x_train_rel3, x_train, x_train_domain)
+                    convert_data_to_ids(tokenizer, x_train)
     x_val_input_ids, x_val_seg_ids, x_val_atten_masks, x_val_len = \
-                    convert_data_to_ids(tokenizer, x_val_target, x_val_rel1, x_val_rel2, x_val_rel3, x_val, x_val_domain)
+                    convert_data_to_ids(tokenizer, x_val)
     x_test_input_ids, x_test_seg_ids, x_test_atten_masks, x_test_len = \
-                    convert_data_to_ids(tokenizer, x_test_target, x_test_rel1, x_test_rel2, x_test_rel3, x_test, x_test_domain)
+                    convert_data_to_ids(tokenizer, x_test)
     
     x_train_all = [x_train_input_ids,x_train_seg_ids,x_train_atten_masks,y_train,x_train_len]
     x_val_all = [x_val_input_ids,x_val_seg_ids,x_val_atten_masks,y_val,x_val_len]
