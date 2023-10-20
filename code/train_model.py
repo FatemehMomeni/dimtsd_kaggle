@@ -356,7 +356,7 @@ def run_classifier():
       sum_loss, sum_loss2 = [], []
       val_f1_average = []
       train_preds_distill,train_cls_distill = [], []
-      test_f1_average = [[]]           
+      test_f1_average = [[], [], []]           
       
       for epoch in range(0, total_epoch):
         print('Epoch:', epoch)
