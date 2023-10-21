@@ -82,16 +82,16 @@ from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer
     
 
 def convert_data_to_ids(tokenizer, text, target, domain):    
-  input_ids, attention_masks, seg_ids, mask_pos = [], [], [], []
+  input_ids, attention_masks, seg_ids = [], [], []
   for i in range(len(text)):
-    prompt = f"The stance of '{text[i]}' is [MASK] on target '{target[i]}' on domain '{domain[i]}'."
-    encoded_dict = tokenizer(prompt, max_length = 512, padding = 'max_length', return_attention_mask = True, truncation = True)
-    input_ids.append(encoded_dict.input_ids)
-    attention_masks.append(encoded_dict.attention_mask)
-    seg_ids.append(encoded_dict.token_type_ids)
-    mask_pos.append(input_ids[i].index(tokenizer.mask_token_id))
+    text[i] = f"[MASK] is the stance of text '{text[i]}' on target '{target[i]}' on domain '{domain[i]}'."
+  encoded_dict = tokenizer(text, max_length = 512, padding = 'max_length', return_tensors = 'pt', return_attention_mask = True, truncation = True).to('cuda:0')
+  input_ids.append(encoded_dict.input_ids)
+  attention_masks.append(encoded_dict.attention_mask)
+  seg_ids.append(encoded_dict.token_type_ids)
+  # mask_pos.append(input_ids[i].index(tokenizer.mask_token_id))
   
-  return input_ids, seg_ids, attention_masks, mask_pos
+  return input_ids, seg_ids, attention_masks
 
 
 def data_helper_bert(x_train_all, x_val_all, x_test_all, model_select):        
@@ -105,29 +105,33 @@ def data_helper_bert(x_train_all, x_val_all, x_test_all, model_select):
   elif model_select == 'Bert':
     tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True, mask_token='[MASK]')   
 
-  x_train_input_ids, x_train_seg_ids, x_train_atten_masks, train_mask_pos = convert_data_to_ids(tokenizer, x_train, x_train_tar, x_train_domain)
-  x_val_input_ids, x_val_seg_ids, x_val_atten_masks, val_mask_pos = convert_data_to_ids(tokenizer, x_val, x_val_tar, x_val_domain)
-  x_test_input_ids, x_test_seg_ids, x_test_atten_masks, test_mask_pos = convert_data_to_ids(tokenizer, x_test, x_test_tar, x_test_domain)
+  x_train_input_ids, x_train_seg_ids, x_train_atten_masks = convert_data_to_ids(tokenizer, x_train, x_train_tar, x_train_domain)
+  x_val_input_ids, x_val_seg_ids, x_val_atten_masks = convert_data_to_ids(tokenizer, x_val, x_val_tar, x_val_domain)
+  x_test_input_ids, x_test_seg_ids, x_test_atten_masks = convert_data_to_ids(tokenizer, x_test, x_test_tar, x_test_domain)
   
-  x_train_all = [x_train_input_ids, x_train_seg_ids, x_train_atten_masks, y_train, train_mask_pos]
-  x_val_all = [x_val_input_ids, x_val_seg_ids, x_val_atten_masks, y_val, val_mask_pos]
-  x_test_all = [x_test_input_ids, x_test_seg_ids, x_test_atten_masks, y_test, test_mask_pos]
+  x_train_all = [x_train_input_ids, x_train_seg_ids, x_train_atten_masks, y_train]
+  x_val_all = [x_val_input_ids, x_val_seg_ids, x_val_atten_masks, y_val]
+  x_test_all = [x_test_input_ids, x_test_seg_ids, x_test_atten_masks, y_test]
   
   return x_train_all, x_val_all, x_test_all
 
 
 def data_loader(x_all, batch_size, model_select, mode, model_name, **kwargs):    
-  x_input_ids = torch.tensor(x_all[0], dtype=torch.long).cuda()
-  x_seg_ids = torch.tensor(x_all[1], dtype=torch.long).cuda()
-  x_atten_masks = torch.tensor(x_all[2], dtype=torch.long).cuda()
-  y = torch.tensor(x_all[3]).cuda()
-  x_mask = torch.tensor(x_all[4], dtype=torch.long).cuda()
+  # x_input_ids = torch.tensor(x_all[0], dtype=torch.long).cuda()
+  # x_seg_ids = torch.tensor(x_all[1], dtype=torch.long).cuda()
+  # x_atten_masks = torch.tensor(x_all[2], dtype=torch.long).cuda()
+  # y = torch.tensor(x_all[3]).cuda()
+  # x_mask = torch.tensor(x_all[4], dtype=torch.long).cuda()
+    x_input_ids = x_all[0]
+    x_seg_ids = x_all[1]
+    x_atten_masks = x_all[2]
+    y = torch.tensor(x_all[3]).cuda()
 
   if model_name == 'student' and mode == 'train':
     y2 = torch.tensor(kwargs['y_train2'], dtype=torch.float).cuda()  # load teacher predictions
-    tensor_loader = TensorDataset(x_input_ids, x_seg_ids, x_atten_masks, y, x_mask, y2)
+    tensor_loader = TensorDataset(x_input_ids, x_seg_ids, x_atten_masks, y, y2)
   else:
-    tensor_loader = TensorDataset(x_input_ids, x_seg_ids, x_atten_masks, y, x_mask)
+    tensor_loader = TensorDataset(x_input_ids, x_seg_ids, x_atten_masks, y)
 
   if mode == 'train':
     data_loader = DataLoader(tensor_loader, shuffle=True, batch_size=batch_size)
