@@ -356,25 +356,25 @@ def run_classifier():
       sum_loss, sum_loss2 = [], []
       val_f1_average = []
       train_preds_distill,train_cls_distill = [], []
-      test_f1_average = [[], [], []]           
+      test_f1_average = [[] for i in range(target_num)]           
       
       for epoch in range(0, total_epoch):
         print('Epoch:', epoch)
         train_loss, train_loss2 = [], []
         model.train()                
         if model_name == 'teacher':
-          for input_ids, seg_ids, atten_masks, target, mask_pos in trainloader:
+          for input_ids, seg_ids, atten_masks, target in trainloader:
             optimizer.zero_grad()
-            output1 = model(input_ids, seg_ids, atten_masks, mask_pos)            
+            output1 = model(input_ids, seg_ids, atten_masks)            
             loss = loss_function(output1, target)
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), 1)
             optimizer.step()
             train_loss.append(loss.item())
         else:
-          for input_ids, seg_ids, atten_masks, target, mask_pos, target2 in trainloader:
+          for input_ids, seg_ids, atten_masks, target, target2 in trainloader:
             optimizer.zero_grad()
-            output1 = model(input_ids, seg_ids, atten_masks, mask_pos)
+            output1 = model(input_ids, seg_ids, atten_masks)
             output2 = output1
 
             # 3. proposed AKD
@@ -408,8 +408,8 @@ def run_classifier():
           model.eval()
           train_preds = []
           with torch.no_grad():
-            for input_ids, seg_ids, atten_masks, target, mask_pos in trainloader_distill:
-              output1 = model(input_ids, seg_ids, atten_masks, mask_pos)
+            for input_ids, seg_ids, atten_masks, target in trainloader_distill:
+              output1 = model(input_ids, seg_ids, atten_masks)
               train_preds.append(output1)
             preds = torch.cat(train_preds, 0)
             train_preds_distill.append(preds)
@@ -419,8 +419,8 @@ def run_classifier():
         model.eval()
         val_preds = []
         with torch.no_grad():            
-          for input_ids, seg_ids, atten_masks, target, mask_pos in valloader:
-            pred1 = model(input_ids, seg_ids, atten_masks, mask_pos)
+          for input_ids, seg_ids, atten_masks, target in valloader:
+            pred1 = model(input_ids, seg_ids, atten_masks)
             val_preds.append(pred1)
           pred1 = torch.cat(val_preds, 0)
           acc, f1_average, precision, recall = model_eval.compute_f1(pred1,y_val)
@@ -431,8 +431,8 @@ def run_classifier():
         
         with torch.no_grad():
           test_preds = []
-          for input_ids, seg_ids, atten_masks, target, mask_pos in testloader:
-            pred1 = model(input_ids, seg_ids, atten_masks, mask_pos)
+          for input_ids, seg_ids, atten_masks, target in testloader:
+            pred1 = model(input_ids, seg_ids, atten_masks)
             test_preds.append(pred1)
           pred1 = torch.cat(test_preds, 0)          
           pred1_list = dh.sep_test_set(pred1)          
