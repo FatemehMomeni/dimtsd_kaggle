@@ -82,13 +82,13 @@ from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer
     
 
 def convert_data_to_ids(tokenizer, text, target, domain):    
-  input_ids, attention_masks, seg_ids = [], [], []
+  # input_ids, attention_masks, seg_ids = [], [], []
   for i in range(len(text)):
     text[i] = f"[MASK] is the stance of text '{text[i]}' on target '{target[i]}' on domain '{domain[i]}'."
   encoded_dict = tokenizer(text, max_length = 512, padding = 'max_length', return_tensors = 'pt', return_attention_mask = True, truncation = True).to('cuda:0')
-  input_ids.append(encoded_dict.input_ids)
-  attention_masks.append(encoded_dict.attention_mask)
-  seg_ids.append(encoded_dict.token_type_ids)
+  input_ids = (encoded_dict.input_ids)
+  attention_masks = (encoded_dict.attention_mask)
+  seg_ids = (encoded_dict.token_type_ids)
   # mask_pos.append(input_ids[i].index(tokenizer.mask_token_id))
   
   return input_ids, seg_ids, attention_masks
@@ -122,10 +122,10 @@ def data_loader(x_all, batch_size, model_select, mode, model_name, **kwargs):
   # x_atten_masks = torch.tensor(x_all[2], dtype=torch.long).cuda()
   # y = torch.tensor(x_all[3]).cuda()
   # x_mask = torch.tensor(x_all[4], dtype=torch.long).cuda()
-    x_input_ids = x_all[0]
-    x_seg_ids = x_all[1]
-    x_atten_masks = x_all[2]
-    y = torch.tensor(x_all[3]).cuda()
+  x_input_ids = x_all[0]
+  x_seg_ids = x_all[1]
+  x_atten_masks = x_all[2]
+  y = torch.tensor(x_all[3]).cuda()
 
   if model_name == 'student' and mode == 'train':
     y2 = torch.tensor(kwargs['y_train2'], dtype=torch.float).cuda()  # load teacher predictions
