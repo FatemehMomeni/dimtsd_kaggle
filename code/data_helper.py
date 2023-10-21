@@ -84,7 +84,7 @@ from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer
 def convert_data_to_ids(tokenizer, text, target, domain):    
   # input_ids, attention_masks, seg_ids = [], [], []
   for i in range(len(text)):
-    text[i] = f"[MASK] is the stance of text '{text[i]}' on target '{target[i]}' on domain '{domain[i]}'."
+    text[i] = f"[MASK] is the stance of text '{text[i]}' on target '{target[i]}' on domain '{domain[i]}' from the set of 'favor', 'against', 'none'."
   encoded_dict = tokenizer(text, max_length = 512, padding = 'max_length', return_tensors = 'pt', return_attention_mask = True, truncation = True).to('cuda:0')
   input_ids = (encoded_dict.input_ids)
   attention_masks = (encoded_dict.attention_mask)
