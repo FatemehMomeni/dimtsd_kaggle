@@ -303,9 +303,9 @@ def run_classifier():
     best_result, best_val = [], []
     for seed in random_seeds:    
       print("current random seed: ", seed)
-      train = pd.read_csv('/content/dimtsd_kaggle/dataset/train_domain.csv', encoding='ISO-8859-1')
-      validation = pd.read_csv('/content/dimtsd_kaggle/dataset/val_domain.csv', encoding='ISO-8859-1')
-      test = pd.read_csv('/content/dimtsd_kaggle/dataset/test_domain.csv', encoding='ISO-8859-1')
+      train = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train_domain.csv', encoding='ISO-8859-1')
+      validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/val_domain.csv', encoding='ISO-8859-1')
+      test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test_domain.csv', encoding='ISO-8859-1')
 
       x_train = train['Tweet'].values.tolist()
       x_train_tar = train['Target'].values.tolist()
@@ -323,7 +323,7 @@ def run_classifier():
       x_test_domain = test['domain'].values.tolist()
 
       if model_name == 'student':
-        y_train2 = torch.load('/content/pro_mask_dot_seed{}.pt'.format(seed))
+        y_train2 = torch.load('/kaggle/working/pro_mask_dot_seed{}.pt'.format(seed))
 
       num_labels = 3  # Favor, Against and None
       x_train_all = [x_train, y_train, x_train_tar, x_train_domain]
@@ -345,7 +345,7 @@ def run_classifier():
 
       label_vectors = list()
       for l in ['against', 'none', 'favor']:
-        label_vectors.append(torch.load(f"/content/{l}_lv_bert.pt"))
+        label_vectors.append(torch.load(f"/kaggle/working/dimtsd_kaggle/{l}_lv_bert.pt"))
       model = error_analysis_model.stance_classifier(num_labels,model_select, label_vectors).cuda()      
 
       for n,p in model.named_parameters():
