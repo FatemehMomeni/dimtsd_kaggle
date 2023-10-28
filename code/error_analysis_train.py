@@ -303,9 +303,9 @@ def run_classifier():
     best_result, best_val = [], []
     for seed in random_seeds:    
       print("current random seed: ", seed)
-      train = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train_domain.csv', encoding='ISO-8859-1')
-      validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/val_domain.csv', encoding='ISO-8859-1')
-      test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test_domain.csv', encoding='ISO-8859-1')
+      train = pd.read_csv('/content/dimtsd_kaggle/dataset/train_domain.csv', encoding='ISO-8859-1')
+      validation = pd.read_csv('/content/dimtsd_kaggle/dataset/val_domain.csv', encoding='ISO-8859-1')
+      test = pd.read_csv('/content/dimtsd_kaggle/dataset/test_domain.csv', encoding='ISO-8859-1')
 
       x_train = train['Tweet'].values.tolist()
       x_train_tar = train['Target'].values.tolist()
@@ -323,7 +323,7 @@ def run_classifier():
       x_test_domain = test['domain'].values.tolist()
 
       if model_name == 'student':
-        y_train2 = torch.load('/kaggle/working/pro_mask_cls_seed{}.pt'.format(seed))
+        y_train2 = torch.load('/content/pro_mask_dot_seed{}.pt'.format(seed))
 
       num_labels = 3  # Favor, Against and None
       x_train_all = [x_train, y_train, x_train_tar, x_train_domain]
@@ -343,7 +343,10 @@ def run_classifier():
       y_val, valloader = dh.data_loader(x_val_all, batch_size, model_select, 'val',model_name)                            
       y_test, testloader = dh.data_loader(x_test_all, batch_size, model_select, 'test',model_name)
 
-      model = error_analysis_model.stance_classifier(num_labels,model_select).cuda()      
+      label_vectors = list()
+      for l in ['against', 'none', 'favor']:
+        label_vectors.append(torch.load(f"/content/{l}_lv_bert.pt"))
+      model = error_analysis_model.stance_classifier(num_labels,model_select, label_vectors).cuda()      
 
       for n,p in model.named_parameters():
         if "bert.embeddings" in n:
@@ -374,7 +377,7 @@ def run_classifier():
         if model_name == 'teacher':
           for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader:
             optimizer.zero_grad()
-            output1 = model(input_ids, seg_ids, atten_masks, mask_pos)            
+            output1 = model(input_ids, seg_ids, atten_masks, mask_pos)       
             loss = loss_function(output1, target)
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), 1)
@@ -453,13 +456,15 @@ def run_classifier():
             acc, f1_average, precision, recall = model_eval.compute_f1(pred1,y_test_list[ind])
             test_f1_average[ind].append(f1_average)
 
+        break
+
       # model that performs best on the dev set is evaluated on the test set
       best_epoch = [index for index,v in enumerate(val_f1_average) if v == max(val_f1_average)][-1]
       best_result.append([f1[best_epoch] for f1 in test_f1_average])
       
       if model_name == 'teacher':
         best_preds = train_preds_distill[best_epoch]
-        torch.save(best_preds, 'pro_mask_cls_seed{}.pt'.format(seed))
+        torch.save(best_preds, 'pro_mask_dot_seed{}.pt'.format(seed))
 
       print("******************************************")
       print("dev results with seed {} on all epochs".format(seed))
