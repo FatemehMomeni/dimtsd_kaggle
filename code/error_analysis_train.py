@@ -456,8 +456,6 @@ def run_classifier():
             acc, f1_average, precision, recall = model_eval.compute_f1(pred1,y_test_list[ind])
             test_f1_average[ind].append(f1_average)
 
-        break
-
       # model that performs best on the dev set is evaluated on the test set
       best_epoch = [index for index,v in enumerate(val_f1_average) if v == max(val_f1_average)][-1]
       best_result.append([f1[best_epoch] for f1 in test_f1_average])
