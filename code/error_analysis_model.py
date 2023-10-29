@@ -56,10 +56,10 @@ class stance_classifier(nn.Module):
       temp += (torch.dot(predicted_mask_token, self.labels[0]),)
       temp += (torch.dot(predicted_mask_token, self.labels[1]),)
       temp += (torch.dot(predicted_mask_token, self.labels[2]),)            
-      predictions += (torch.stack(temp),)
+      predictions += (torch.stack(temp).cuda(),)
       # predictions = predictions + (predicted_mask_token,)
     # prediction_tensor = torch.stack(predictions).cuda()
-    predictions_tensor = torch.stack(predictions)
+    predictions_tensor = torch.stack(predictions).cuda()
     # pred_reshape = self.mask_cls(prediction_tensor)
     # last_hidden2 = self.bert(pred_reshape.long())
     # cls = last_hidden2[0][:,0]
