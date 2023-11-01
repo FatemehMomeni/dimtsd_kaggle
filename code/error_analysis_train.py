@@ -453,8 +453,9 @@ def run_classifier():
           for ind in range(len(y_test_list)):              
             pred1 = pred1_list[ind]
             test_preds.append(pred1)
-            acc, f1_average, precision, recall = model_eval.compute_f1(pred1,y_test_list[ind])
+            acc, f1_average, precision, recall, confusion_matrix = model_eval.compute_f1(pred1,y_test_list[ind])
             test_f1_average[ind].append(f1_average)
+            print('=-=-=\n"confusion matrix"(rows:ground truth, columns:predicted)\n', confusion_matrix)              
 
       # model that performs best on the dev set is evaluated on the test set
       best_epoch = [index for index,v in enumerate(val_f1_average) if v == max(val_f1_average)][-1]
