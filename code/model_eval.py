@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 import numpy as np
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
 
 
 # Evaluation
@@ -19,4 +19,4 @@ def compute_f1(preds, y):
 
     f1_average = (result[2][0]+result[2][2])/2  # average F1 score of Favor and Against
         
-    return acc, f1_average, result[0], result[1]
+    return acc, f1_average, result[0], result[1], confusion_matrix(y_true, y_pred)
