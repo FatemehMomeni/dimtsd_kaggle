@@ -435,8 +435,10 @@ def run_classifier():
             pred1 = model(input_ids, seg_ids, atten_masks, mask_pos)
             val_preds.append(pred1)
           pred1 = torch.cat(val_preds, 0)
-          acc, f1_average, precision, recall = model_eval.compute_f1(pred1,y_val)
+          acc, f1_average, precision, recall, confusion_matrix = model_eval.compute_f1(pred1,y_val)
           val_f1_average.append(f1_average)
+          print('=-=-=')
+          print("\nconfusion matrix (rows:ground truth, columns:predictions)\n", confusion_matrix)
 
         # evaluation on test set
         y_test_list = dh.sep_test_set(y_test)
