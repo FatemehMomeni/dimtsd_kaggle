@@ -84,7 +84,7 @@
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer
-import numpy as np
+# import numpy as np
     
 
 def convert_data_to_ids(tokenizer, text, target, domain):    
@@ -115,13 +115,13 @@ def data_helper_bert(x_train_all, x_val_all, x_test_all, model_select):
   val_input_ids, val_seg_ids, val_atten_masks, val_mask_pos = convert_data_to_ids(tokenizer, x_val, x_val_tar, x_val_domain)
   test_input_ids, test_seg_ids, test_atten_masks, test_mask_pos = convert_data_to_ids(tokenizer, x_test, x_test_tar, x_test_domain)
 
-  y_train_encoded = np.eye(3)[y_train].tolist()
-  y_val_encoded = np.eye(3)[y_val].tolist()
-  y_test_encoded = np.eye(3)[y_test].tolist()    
+  # y_train_encoded = np.eye(3)[y_train].tolist()
+  # y_val_encoded = np.eye(3)[y_val].tolist()
+  # y_test_encoded = np.eye(3)[y_test].tolist()    
   
-  x_train_all = [train_input_ids, train_seg_ids, train_atten_masks, train_mask_pos, y_train_encoded]
-  x_val_all = [val_input_ids, val_seg_ids, val_atten_masks, val_mask_pos, y_val_encoded]
-  x_test_all = [test_input_ids, test_seg_ids, test_atten_masks, test_mask_pos, y_test_encoded]
+  x_train_all = [train_input_ids, train_seg_ids, train_atten_masks, train_mask_pos, y_train]
+  x_val_all = [val_input_ids, val_seg_ids, val_atten_masks, val_mask_pos, y_val]
+  x_test_all = [test_input_ids, test_seg_ids, test_atten_masks, test_mask_pos, y_test]
   
   return x_train_all, x_val_all, x_test_all
 
