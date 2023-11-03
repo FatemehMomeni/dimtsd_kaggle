@@ -46,25 +46,33 @@ class stance_classifier(nn.Module):
     # self.out = nn.Linear(self.bert.config.hidden_size, num_labels)
     # self.mask_cls = nn.Linear(self.bert.config.hidden_size, 512)
     self.labels = label_vectors
-        
-  def forward(self, x_input_ids, x_seg_ids, x_atten_masks, mask_pos):  
+
+
+def forward(self, x_input_ids, x_seg_ids, x_atten_masks, mask_pos, label):      
     last_hidden = self.bert(input_ids=x_input_ids, attention_mask=x_atten_masks, token_type_ids=x_seg_ids)[0]
     predictions = tuple()
     for i in range(len(x_input_ids)):
-      predicted_mask_token = last_hidden[i, mask_pos[i]]
-      temp = tuple()
-      temp += (torch.dot(predicted_mask_token, self.labels[0]),)
-      temp += (torch.dot(predicted_mask_token, self.labels[1]),)
-      temp += (torch.dot(predicted_mask_token, self.labels[2]),)            
-      predictions += (torch.stack(temp).cuda(),)
-      # predictions = predictions + (predicted_mask_token,)
-    # prediction_tensor = torch.stack(predictions).cuda()
+      predicted_mask_token = last_hidden[i, mask_pos[i]] 
+      predictions += (torch.dot(predicted_mask_token, self.labels[label]),)
     predictions_tensor = torch.stack(predictions).cuda()
-    # pred_reshape = self.mask_cls(prediction_tensor)
-    # last_hidden2 = self.bert(pred_reshape.long())
-    # cls = last_hidden2[0][:,0]
-    # query = self.dropout(predictions_tensor)
-    # linear = self.relu(self.linear(query))
-    # out = self.out(linear)
     
     return predictions_tensor
+
+    # for i in range(len(x_input_ids)):
+    #   predicted_mask_token = last_hidden[i, mask_pos[i]]
+    #   temp = tuple()
+    #   temp += (torch.dot(predicted_mask_token, self.labels[0]),)
+    #   temp += (torch.dot(predicted_mask_token, self.labels[1]),)
+    #   temp += (torch.dot(predicted_mask_token, self.labels[2]),)            
+    #   predictions += (torch.stack(temp).cuda(),)
+    #   # predictions = predictions + (predicted_mask_token,)
+    # # prediction_tensor = torch.stack(predictions).cuda()
+    # predictions_tensor = torch.stack(predictions).cuda()
+    # # pred_reshape = self.mask_cls(prediction_tensor)
+    # # last_hidden2 = self.bert(pred_reshape.long())
+    # # cls = last_hidden2[0][:,0]
+    # # query = self.dropout(predictions_tensor)
+    # # linear = self.relu(self.linear(query))
+    # # out = self.out(linear)
+    
+    # return predictions_tensor
