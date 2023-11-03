@@ -303,32 +303,35 @@ def run_classifier():
     best_result, best_val = [], []
     for seed in random_seeds:    
       print("current random seed: ", seed)
-      train = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train_domain.csv', encoding='ISO-8859-1')
-      validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/val_domain.csv', encoding='ISO-8859-1')
-      test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test_domain.csv', encoding='ISO-8859-1')
+      train = pd.read_csv('/content/train.csv', encoding='ISO-8859-1')
+      validation = pd.read_csv('/content/validation.csv', encoding='ISO-8859-1')
+      test = pd.read_csv('/content/test.csv', encoding='ISO-8859-1')
 
-      x_train = train['Tweet'].values.tolist()
-      x_train_tar = train['Target'].values.tolist()
-      y_train = train['Stance'].values.tolist()
-      x_train_domain = train['domain'].values.tolist()
+      train_a = train[train['stance'] == 0]
+      train_n = train[train['stance'] == 1]
+      train_f = train[train['stance'] == 2]      
+      x_train_a = train_a['prompt'].values.tolist()
+      y_train_a = train_a['stance'].values.tolist()
+      x_train_n = train_n['prompt'].values.tolist()
+      y_train_n = train_n['stance'].values.tolist()      
+      x_train_f = train_f['prompt'].values.tolist()
+      y_train_f = train_f['stance'].values.tolist()
+      x_train = [x_train_a, x_train_n, x_train_f]
+      y_train = [y_train_a, y_train_n, y_train_f]
 
-      x_val = validation['Tweet'].values.tolist()
-      x_val_tar = validation['Target'].values.tolist()
-      y_val = validation['Stance'].values.tolist()
-      x_val_domain = validation['domain'].values.tolist()
-
-      x_test = test['Tweet'].values.tolist()
-      x_test_tar = test['Tweet'].values.tolist()
-      y_test = test['Stance'].values.tolist()
-      x_test_domain = test['domain'].values.tolist()
+      x_val = validation['prompt'].values.tolist()
+      y_val = validation['stance'].values.tolist()
+      
+      x_test = test['prompt'].values.tolist()
+      y_test = test['stance'].values.tolist()
 
       if model_name == 'student':
-        y_train2 = torch.load('/kaggle/working/pro_mask_dot_seed{}.pt'.format(seed))
+        y_train2 = torch.load('/content/pro_mask_dot_seed{}.pt'.format(seed))
 
       num_labels = 3  # Favor, Against and None
-      x_train_all = [x_train, y_train, x_train_tar, x_train_domain]
-      x_val_all = [x_val, y_val, x_val_tar, x_val_domain]
-      x_test_all = [x_test, y_test, x_test_tar, x_test_domain]
+      x_train_all = [x_train, y_train]
+      x_val_all = [x_val, y_val]
+      x_test_all = [x_test, y_test]
       
       random.seed(seed)
       np.random.seed(seed)
@@ -345,25 +348,47 @@ def run_classifier():
 
       label_vectors = list()
       for l in ['against', 'none', 'favor']:
-        label_vectors.append(torch.load(f"/kaggle/working/dimtsd_kaggle/{l}_lv_bert.pt"))
-      model = error_analysis_model.stance_classifier(num_labels,model_select, label_vectors).cuda()      
+        label_vectors.append(torch.load(f"/content/dimtsd_kaggle/{l}_lv_bert.pt"))
+      model_a = error_analysis_model.stance_classifier(num_labels,model_select, label_vectors).cuda()      
+      model_n = error_analysis_model.stance_classifier(num_labels,model_select, label_vectors).cuda()  
+      model_f = error_analysis_model.stance_classifier(num_labels,model_select, label_vectors).cuda()  
 
-      for n,p in model.named_parameters():
-        # if "bert.embeddings" in n:
-        p.requires_grad = False
+      for n,p in model_a.named_parameters():
+        if "bert.embeddings" in n:
+          p.requires_grad = False
+      for n,p in model_n.named_parameters():
+        if "bert.embeddings" in n:
+          p.requires_grad = False
+      for n,p in model_f.named_parameters():
+        if "bert.embeddings" in n:
+          p.requires_grad = False
               
-      optimizer_grouped_parameters = [
-        {'params': [p for n, p in model.named_parameters() if n.startswith('bert.encoder')] , 'lr': lr},
-        {'params': [p for n, p in model.named_parameters() if n.startswith('bert.pooler')] , 'lr': 1e-3},
-        {'params': [p for n, p in model.named_parameters() if n.startswith('linear')], 'lr': 1e-3},
-        {'params': [p for n, p in model.named_parameters() if n.startswith('out')], 'lr': 1e-3}
+      optimizer_grouped_parameters_a = [
+        {'params': [p for n, p in model_a.named_parameters() if n.startswith('bert.encoder')] , 'lr': lr},
+        {'params': [p for n, p in model_a.named_parameters() if n.startswith('bert.pooler')] , 'lr': 1e-3},
+        {'params': [p for n, p in model_a.named_parameters() if n.startswith('linear')], 'lr': 1e-3},
+        {'params': [p for n, p in model_a.named_parameters() if n.startswith('out')], 'lr': 1e-3}
+        ]
+      optimizer_grouped_parameters_n = [
+        {'params': [p for n, p in model_n.named_parameters() if n.startswith('bert.encoder')] , 'lr': lr},
+        {'params': [p for n, p in model_n.named_parameters() if n.startswith('bert.pooler')] , 'lr': 1e-3},
+        {'params': [p for n, p in model_n.named_parameters() if n.startswith('linear')], 'lr': 1e-3},
+        {'params': [p for n, p in model_n.named_parameters() if n.startswith('out')], 'lr': 1e-3}
+        ]
+      optimizer_grouped_parameters_f = [
+        {'params': [p for n, p in model_f.named_parameters() if n.startswith('bert.encoder')] , 'lr': lr},
+        {'params': [p for n, p in model_f.named_parameters() if n.startswith('bert.pooler')] , 'lr': 1e-3},
+        {'params': [p for n, p in model_f.named_parameters() if n.startswith('linear')], 'lr': 1e-3},
+        {'params': [p for n, p in model_f.named_parameters() if n.startswith('out')], 'lr': 1e-3}
         ]
       
       loss_function = nn.CrossEntropyLoss(reduction='sum')
       if model_name == 'student':
         loss_function2 = nn.KLDivLoss(reduction='sum')
       
-      optimizer = AdamW(optimizer_grouped_parameters, lr=lr)
+      optimizer_a = AdamW(optimizer_grouped_parameters_a, lr=lr)
+      optimizer_n = AdamW(optimizer_grouped_parameters_n, lr=lr)
+      optimizer_f = AdamW(optimizer_grouped_parameters_f, lr=lr)
 
       sum_loss, sum_loss2 = [], []
       val_f1_average = []
@@ -373,20 +398,20 @@ def run_classifier():
       for epoch in range(0, total_epoch):
         print('Epoch:', epoch)
         train_loss, train_loss2 = [], []
-        model.train()                
+        model_a.train()                
         if model_name == 'teacher':
-          for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader:
-            optimizer.zero_grad()
-            output1 = model(input_ids, seg_ids, atten_masks, mask_pos)       
-            loss = loss_function(output1, target)
+          for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader[0]:
+            optimizer_a.zero_grad()
+            output1 = model_a(input_ids, seg_ids, atten_masks, mask_pos, 0)                   
+            loss = loss_function(output1, target.float())
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), 1)
-            optimizer.step()
+            nn.utils.clip_grad_norm_(model_a.parameters(), 1)
+            optimizer_a.step()
             train_loss.append(loss.item())
         else:
-          for input_ids, seg_ids, atten_masks, mask_pos, target, target2 in trainloader:
-            optimizer.zero_grad()
-            output1 = model(input_ids, seg_ids, atten_masks, mask_pos)
+          for input_ids, seg_ids, atten_masks, mask_pos, target, target2 in trainloader[0]:
+            optimizer_a.zero_grad()
+            output1 = model_a(input_ids, seg_ids, atten_masks, mask_pos, 0)
             output2 = output1
 
             # 3. proposed AKD
@@ -406,39 +431,163 @@ def run_classifier():
             loss = (1-alpha)*loss_function(output1, target) + alpha*loss_function2(F.log_softmax(output2), target2)
             loss2 = alpha*loss_function2(F.log_softmax(output2), target2)
             loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), 1)
-            optimizer.step()
+            nn.utils.clip_grad_norm_(model_a.parameters(), 1)
+            optimizer_a.step()
             train_loss.append(loss.item())
             train_loss2.append(loss2.item())
-          sum_loss2.append(sum(train_loss2) / len(x_train))  
+          sum_loss2.append(sum(train_loss2) / len(x_train_a))  
           print(sum_loss2[epoch])
-        sum_loss.append(sum(train_loss) / len(x_train))  
+        sum_loss.append(sum(train_loss) / len(x_train_a))  
+        print(sum_loss[epoch])
+
+        train_loss, train_loss2 = [], []
+        model_n.train()                
+        if model_name == 'teacher':
+          for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader[1]:
+            optimizer_n.zero_grad()
+            output1 = model_n(input_ids, seg_ids, atten_masks, mask_pos, 1)       
+            loss = loss_function(output1, target.float())
+            loss.backward()
+            nn.utils.clip_grad_norm_(model_n.parameters(), 1)
+            optimizer_n.step()
+            train_loss.append(loss.item())
+        else:
+          for input_ids, seg_ids, atten_masks, mask_pos, target, target2 in trainloader[1]:
+            optimizer_n.zero_grad()
+            output1 = model_n(input_ids, seg_ids, atten_masks, mask_pos, 1)
+            output2 = output1
+
+            # 3. proposed AKD
+            output2 = torch.empty(output1.shape).fill_(0.).cuda()
+            for ind in range(len(target2)):
+              soft = max(F.softmax(target2[ind]))
+              if soft <= theta:
+                rrand = random.uniform(2,3)  # parameter b1 and b2 in paper
+              elif soft < theta+0.2 and soft > theta:  # parameter a1 and a2 are theta and theta+0.2 here 
+                rrand = random.uniform(1,2)
+              else:
+                rrand = 1
+              target2[ind] = target2[ind]/rrand
+              output2[ind] = output1[ind]/rrand
+            target2 = F.softmax(target2)
+                
+            loss = (1-alpha)*loss_function(output1, target) + alpha*loss_function2(F.log_softmax(output2), target2)
+            loss2 = alpha*loss_function2(F.log_softmax(output2), target2)
+            loss.backward()
+            nn.utils.clip_grad_norm_(model_n.parameters(), 1)
+            optimizer_n.step()
+            train_loss.append(loss.item())
+            train_loss2.append(loss2.item())
+          sum_loss2.append(sum(train_loss2) / len(x_train_n))  
+          print(sum_loss2[epoch])
+        sum_loss.append(sum(train_loss) / len(x_train_n))  
+        print(sum_loss[epoch])
+
+        train_loss, train_loss2 = [], []
+        model_f.train()                
+        if model_name == 'teacher':
+          for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader[2]:
+            optimizer_f.zero_grad()
+            output1 = model_f(input_ids, seg_ids, atten_masks, mask_pos, 2)       
+            loss = loss_function(output1, target.float())
+            loss.backward()
+            nn.utils.clip_grad_norm_(model_f.parameters(), 1)
+            optimizer_f.step()
+            train_loss.append(loss.item())
+        else:
+          for input_ids, seg_ids, atten_masks, mask_pos, target, target2 in trainloader[2]:
+            optimizer_f.zero_grad()
+            output1 = model_f(input_ids, seg_ids, atten_masks, mask_pos, 2)
+            output2 = output1
+
+            # 3. proposed AKD
+            output2 = torch.empty(output1.shape).fill_(0.).cuda()
+            for ind in range(len(target2)):
+              soft = max(F.softmax(target2[ind]))
+              if soft <= theta:
+                rrand = random.uniform(2,3)  # parameter b1 and b2 in paper
+              elif soft < theta+0.2 and soft > theta:  # parameter a1 and a2 are theta and theta+0.2 here 
+                rrand = random.uniform(1,2)
+              else:
+                rrand = 1
+              target2[ind] = target2[ind]/rrand
+              output2[ind] = output1[ind]/rrand
+            target2 = F.softmax(target2)
+                
+            loss = (1-alpha)*loss_function(output1, target) + alpha*loss_function2(F.log_softmax(output2), target2)
+            loss2 = alpha*loss_function2(F.log_softmax(output2), target2)
+            loss.backward()
+            nn.utils.clip_grad_norm_(model_f.parameters(), 1)
+            optimizer_f.step()
+            train_loss.append(loss.item())
+            train_loss2.append(loss2.item())
+          sum_loss2.append(sum(train_loss2) / len(x_train_f))
+          print(sum_loss2[epoch])
+        sum_loss.append(sum(train_loss) / len(x_train_f))  
         print(sum_loss[epoch])
 
         if model_name == 'teacher':
           # train evaluation
-          model.eval()
+          model_a.eval()
           train_preds = []
           with torch.no_grad():
-            for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader_distill:
-              output1 = model(input_ids, seg_ids, atten_masks, mask_pos)
+            for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader_distill[0]:
+              output1 = model_a(input_ids, seg_ids, atten_masks, mask_pos, 0)
+              train_preds.append(output1)
+            preds = torch.cat(train_preds, 0)
+            train_preds_distill.append(preds)
+            print("The size of train_preds is: ", preds.size())
+          
+          model_n.eval()
+          train_preds = []
+          with torch.no_grad():
+            for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader_distill[1]:
+              output1 = model_n(input_ids, seg_ids, atten_masks, mask_pos, 1)
+              train_preds.append(output1)
+            preds = torch.cat(train_preds, 0)
+            train_preds_distill.append(preds)
+            print("The size of train_preds is: ", preds.size())
+          
+          model_f.eval()
+          train_preds = []
+          with torch.no_grad():
+            for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader_distill[2]:
+              output1 = model_f(input_ids, seg_ids, atten_masks, mask_pos, 2)
               train_preds.append(output1)
             preds = torch.cat(train_preds, 0)
             train_preds_distill.append(preds)
             print("The size of train_preds is: ", preds.size())
 
         # evaluation on val set 
-        model.eval()
+        model_a.eval()
         val_preds = []
         with torch.no_grad():            
           for input_ids, seg_ids, atten_masks, mask_pos, target in valloader:
-            pred1 = model(input_ids, seg_ids, atten_masks, mask_pos)
+            pred1 = model_a(input_ids, seg_ids, atten_masks, mask_pos, 0)
             val_preds.append(pred1)
           pred1 = torch.cat(val_preds, 0)
-          acc, f1_average, precision, recall, confusion_matrix = model_eval.compute_f1(pred1,y_val)
+          acc, f1_average, precision, recall, _ = model_eval.compute_f1(pred1,y_val, False)
           val_f1_average.append(f1_average)
-          print('=-=-=')
-          print("\nconfusion matrix (rows:ground truth, columns:predictions)\n", confusion_matrix)
+        
+        model_n.eval()
+        val_preds = []
+        with torch.no_grad():            
+          for input_ids, seg_ids, atten_masks, mask_pos, target in valloader:
+            pred1 = model_n(input_ids, seg_ids, atten_masks, mask_pos, 1)
+            val_preds.append(pred1)
+          pred1 = torch.cat(val_preds, 0)
+          acc, f1_average, precision, recall, _ = model_eval.compute_f1(pred1,y_val, False)
+          val_f1_average.append(f1_average)
+        
+        model_f.eval()
+        val_preds = []
+        with torch.no_grad():            
+          for input_ids, seg_ids, atten_masks, mask_pos, target in valloader:
+            pred1 = model_f(input_ids, seg_ids, atten_masks, mask_pos, 2)
+            val_preds.append(pred1)
+          pred1 = torch.cat(val_preds, 0)
+          acc, f1_average, precision, recall, _ = model_eval.compute_f1(pred1,y_val, False)
+          val_f1_average.append(f1_average)
 
         # evaluation on test set
         y_test_list = dh.sep_test_set(y_test)
@@ -446,16 +595,32 @@ def run_classifier():
         with torch.no_grad():
           test_preds = []
           for input_ids, seg_ids, atten_masks, mask_pos, target in testloader:
-            pred1 = model(input_ids, seg_ids, atten_masks, mask_pos)
+            pred1 = model_a(input_ids, seg_ids, atten_masks, mask_pos, 0)
             test_preds.append(pred1)
           pred1 = torch.cat(test_preds, 0)          
-          pred1_list = dh.sep_test_set(pred1)          
+          pred1_list_a = dh.sep_test_set(pred1)          
+
+          test_preds = []
+          for input_ids, seg_ids, atten_masks, mask_pos, target in testloader:
+            pred1 = model_n(input_ids, seg_ids, atten_masks, mask_pos, 1)
+            test_preds.append(pred1)
+          pred1 = torch.cat(test_preds, 0)          
+          pred1_list_n = dh.sep_test_set(pred1) 
+
+          test_preds = []
+          for input_ids, seg_ids, atten_masks, mask_pos, target in testloader:
+            pred1 = model_f(input_ids, seg_ids, atten_masks, mask_pos, 2)
+            test_preds.append(pred1)
+          pred1 = torch.cat(test_preds, 0)          
+          pred1_list_f = dh.sep_test_set(pred1) 
                 
           test_preds = []
           for ind in range(len(y_test_list)):              
-            pred1 = pred1_list[ind]
-            test_preds.append(pred1)
-            acc, f1_average, precision, recall, confusion_matrix = model_eval.compute_f1(pred1,y_test_list[ind])
+            pred1_a = pred1_list_a[ind]
+            pred1_n = pred1_list_n[ind]
+            pred1_f = pred1_list_f[ind]
+            # test_preds.append(pred1)
+            acc, f1_average, precision, recall, confusion_matrix = model_eval.compute_f1(pred1_a, pred1_n, pred1_f,y_test_list[ind], True)
             test_f1_average[ind].append(f1_average)
             print('=-=-=\n"confusion matrix"(rows:ground truth, columns:predicted)\n', confusion_matrix)              
 
