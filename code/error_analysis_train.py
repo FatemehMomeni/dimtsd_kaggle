@@ -349,8 +349,8 @@ def run_classifier():
       model = error_analysis_model.stance_classifier(num_labels,model_select, label_vectors).cuda()      
 
       for n,p in model.named_parameters():
-        if "bert.embeddings" in n:
-          p.requires_grad = False
+        # if "bert.embeddings" in n:
+        p.requires_grad = False
               
       optimizer_grouped_parameters = [
         {'params': [p for n, p in model.named_parameters() if n.startswith('bert.encoder')] , 'lr': lr},
