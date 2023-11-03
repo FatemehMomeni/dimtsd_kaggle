@@ -303,9 +303,9 @@ def run_classifier():
     best_result, best_val = [], []
     for seed in random_seeds:    
       print("current random seed: ", seed)
-      train = pd.read_csv('/content/train.csv', encoding='ISO-8859-1')
-      validation = pd.read_csv('/content/validation.csv', encoding='ISO-8859-1')
-      test = pd.read_csv('/content/test.csv', encoding='ISO-8859-1')
+      train = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train.csv', encoding='ISO-8859-1')
+      validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/validation.csv', encoding='ISO-8859-1')
+      test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test.csv', encoding='ISO-8859-1')
 
       train_a = train[train['stance'] == 0]
       train_n = train[train['stance'] == 1]
@@ -348,7 +348,7 @@ def run_classifier():
 
       label_vectors = list()
       for l in ['against', 'none', 'favor']:
-        label_vectors.append(torch.load(f"/content/dimtsd_kaggle/{l}_lv_bert.pt"))
+        label_vectors.append(torch.load(f"/kaggle/working/dimtsd_kaggle/{l}_lv_bert.pt"))
       model_a = error_analysis_model.stance_classifier(num_labels,model_select, label_vectors).cuda()      
       model_n = error_analysis_model.stance_classifier(num_labels,model_select, label_vectors).cuda()  
       model_f = error_analysis_model.stance_classifier(num_labels,model_select, label_vectors).cuda()  
