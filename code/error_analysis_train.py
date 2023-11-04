@@ -67,6 +67,12 @@ def run_classifier():
 
             x_test = test['prompt'].values.tolist()
             y_test = test['stance'].values.tolist()
+            x_temp = x_test[:10238]
+            x_test[:1966] = x_test[10238:12204]
+            x_test[1966:12204] = x_temp
+            y_temp = y_test[:10238]
+            y_test[:1966] = y_test[10238:12204]
+            y_test[1966:12204] = y_temp
 
             if model_name == 'student':
                 y_train2 = torch.load('/kaggle/working/pro_extend_no_tars_error_seed1.pt')
