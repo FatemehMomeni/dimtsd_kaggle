@@ -56,7 +56,7 @@ def run_classifier():
         for seed in random_seeds:    
             print("current random seed: ", seed)
             train = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train.csv', encoding='ISO-8859-1')
-            validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/valdation.csv', encoding='ISO-8859-1')
+            validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/validation.csv', encoding='ISO-8859-1')
             test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test.csv', encoding='ISO-8859-1')
 
             x_train = train['prompt'].values.tolist()
