@@ -48,7 +48,7 @@ class stance_classifier(nn.Module):
     self.labels = label_vectors
 
 
-def forward(self, x_input_ids, x_seg_ids, x_atten_masks, mask_pos):      
+  def forward(self, x_input_ids, x_seg_ids, x_atten_masks, mask_pos):      
     last_hidden = self.bert(input_ids=x_input_ids, attention_mask=x_atten_masks, token_type_ids=x_seg_ids)[0]
     predictions = tuple()
     # for i in range(len(x_input_ids)):
