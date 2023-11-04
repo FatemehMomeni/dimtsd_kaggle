@@ -195,7 +195,7 @@ def run_classifier():
 
                 # evaluation on test set
                 if train_mode == "unified":
-                    y_test_list = dh.sep_test_set(y_test,dataset_name)
+                    y_test_list = dh.sep_test_set(y_test)
                     
                 flag = True
                 with torch.no_grad():
