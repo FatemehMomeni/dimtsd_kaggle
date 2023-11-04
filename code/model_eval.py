@@ -5,9 +5,8 @@ from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
 
 
 # Evaluation
-def compute_f1(preds_a, preds_n, preds_f, y, test):
+def compute_f1(preds, y, test):
     
-    preds = torch.stack((preds_a, preds_n, preds_f)).cuda()
     rounded_preds = torch.nn.functional.softmax(preds)
     _, indices = torch.max(rounded_preds, 1)
                 
