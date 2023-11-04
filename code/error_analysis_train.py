@@ -217,7 +217,7 @@ def run_classifier():
                         indices = indices.tolist()
                         error_df = pd.DataFrame({'input': error_input, 'stance': error_stance, 'prediction': indices})
                         error_df.to_csv('pro_mask_domain_error.csv', index=False)                    
-                        pred1_list = dh.sep_test_set(pred1,dataset_name)
+                        pred1_list = dh.sep_test_set(pred1)
                         
                     test_preds = []
                     for ind in range(len(y_test_list)):                        
