@@ -5,7 +5,7 @@ from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
 
 
 # Evaluation
-def compute_f1(preds, y, test):
+def compute_f1(preds, y):
     
     rounded_preds = torch.nn.functional.softmax(preds)
     _, indices = torch.max(rounded_preds, 1)
@@ -19,8 +19,4 @@ def compute_f1(preds, y, test):
 
     f1_average = (result[2][0]+result[2][2])/2  # average F1 score of Favor and Against
         
-    if test:
-      confusion_matrix = confusion_matrix(y_true, y_pred)
-    else:
-      confusion_matrix = None
-    return acc, f1_average, result[0], result[1], confusion_matrix
+    return acc, f1_average, result[0], result[1]
