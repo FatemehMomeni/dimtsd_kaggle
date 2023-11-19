@@ -7,13 +7,13 @@ from sklearn.metrics import precision_recall_fscore_support, confusion_matrix
 # Evaluation
 def compute_f1(preds, y):
     
-    rounded_preds = torch.nn.functional.softmax(preds)
-    _, indices = torch.max(rounded_preds, 1)
+    # rounded_preds = torch.nn.functional.softmax(preds)
+    # _, indices = torch.max(rounded_preds, 1)
                 
-    correct = (indices == y).float() 
+    correct = (preds == y).float() 
     acc = correct.sum()/len(correct)  # compute accuracy
     
-    y_pred = np.array(indices.cpu().numpy())
+    y_pred = np.array(preds.cpu().numpy())
     y_true = np.array(y.cpu().numpy())
     result = precision_recall_fscore_support(y_true, y_pred, average=None,labels=[0,1,2])
 
