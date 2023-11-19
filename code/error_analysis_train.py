@@ -262,7 +262,7 @@ import argparse
 import json
 import gc
 import error_analysis_data as dh
-from transformers import AdamW
+from transformers import AdamW, AutoModelForSeq2SeqLM, T5ForConditionalGeneration
 import error_analysis_model, model_eval
 
 
@@ -298,28 +298,32 @@ def run_classifier():
     best_result, best_val = [], []
     for seed in random_seeds:    
       print("current random seed: ", seed)
-      train = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train.csv', encoding='ISO-8859-1')
-      validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/validation.csv', encoding='ISO-8859-1')
-      test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test.csv', encoding='ISO-8859-1')
+      train = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train_domain.csv', encoding='ISO-8859-1')
+      validation = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/val_domain.csv', encoding='ISO-8859-1')
+      test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test_domain.csv', encoding='ISO-8859-1')
       
-      x_train = train['prompt'].values.tolist()
-      y_train = train['stance'].values.tolist()     
+      x_train = train['Tweet'].values.tolist()
+      x_train_tar = train['Target'].values.tolist()
+      y_train = train['Stance'].values.tolist()           
       y_train_str = list(map(lambda x: labels_map[x], y_train)) 
 
-      x_val = validation['prompt'].values.tolist()
-      y_val = validation['stance'].values.tolist()
+      x_val = validation['Tweet'].values.tolist()
+      x_val_tar = validation['Target'].values.tolist()
+      y_val = validation['Stance'].values.tolist()
       y_val_str = list(map(lambda x: labels_map[x], y_val))
       
-      x_test = test['prompt'].values.tolist()
-      y_test = test['stance'].values.tolist()
+      x_test = test['Tweet'].values.tolist()
+      x_test_tar = test['Target'].values.tolist()
+      y_test = test['Stance'].values.tolist()
+      y_test_str = list(map(lambda x: labels_map[x], y_test))
 
       if model_name == 'student':
-        y_train2 = torch.load('/kaggle/working/pro_mask_dot_seed{}.pt'.format(seed))
+        y_train2 = torch.load('/kaggle/working/flant5_seed{}.pt'.format(seed))
 
       num_labels = 3  # Favor, Against and None
-      x_train_all = [x_train, y_train, y_train_str]
-      x_val_all = [x_val, y_val, y_val_str]
-      x_test_all = [x_test, y_test]
+      x_train_all = [x_train, x_train_tar, y_train, y_train_str]
+      x_val_all = [x_val, x_val_tar, y_val, y_val_str]
+      x_test_all = [x_test, x_test_tar, y_test, y_test_str]
       
       random.seed(seed)
       np.random.seed(seed)
@@ -337,11 +341,13 @@ def run_classifier():
       # label_vectors = list()
       # for l in ['against', 'none', 'favor']:
       #   label_vectors.append(torch.load(f"/content/dimtsd_kaggle/{l}_lv_bert.pt"))
-      model = error_analysis_model.stance_classifier(num_labels,model_select).cuda()  
+      # model = error_analysis_model.stance_classifier(num_labels,model_select).cuda()  
+      # model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base").to('cuda:0')
+      model = error_analysis_model.stance_classifier(num_labels,model_select).to('cuda:0')
 
-      for n,p in model.named_parameters():
-        if "bert.embeddings" in n:
-          p.requires_grad = False
+      # for n,p in model.named_parameters():
+      #   if "bert.embeddings" in n:
+      #     p.requires_grad = False
               
       optimizer_grouped_parameters = [
         {'params': [p for n, p in model.named_parameters() if n.startswith('bert.encoder')] , 'lr': lr},
@@ -366,18 +372,19 @@ def run_classifier():
         train_loss, train_loss2 = [], []
         model.train()                
         if model_name == 'teacher':
-          for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader:
+          for input_ids, attention_mask, label, target in trainloader:
             optimizer.zero_grad()
-            output1 = model(input_ids, seg_ids, atten_masks, mask_pos)                               
-            loss = loss_function(output1, target)
-            loss.backward()
+            loss = model(input_ids, attention_mask, label, True)
+            # loss = loss_function(output1, target)            
+            loss.item()
+            # loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), 1)
             optimizer.step()
             train_loss.append(loss.item())
         else:
-          for input_ids, seg_ids, atten_masks, mask_pos, target, target2 in trainloader:
+          for input_ids, attention_mask, label, target, target2 in trainloader:
             optimizer.zero_grad()
-            output1 = model(input_ids, seg_ids, atten_masks, mask_pos)
+            output1 = model(input_ids, attention_mask, label, False)
             output2 = output1
 
             # 3. proposed AKD
@@ -411,9 +418,13 @@ def run_classifier():
           model.eval()
           train_preds = []
           with torch.no_grad():
-            for input_ids, seg_ids, atten_masks, mask_pos, target in trainloader_distill:
-              output1 = model(input_ids, seg_ids, atten_masks, mask_pos)
-              train_preds.append(output1)
+            for input_ids, attention_mask, label, target in trainloader_distill:
+              output1 = model(input_ids, attention_mask, label, False)
+              if pred1 in labels_map.values():
+                prediction = list(labels_map.keys())[list(labels_map.values()).index(pred1)]
+              else:
+                prediction = 1
+              train_preds.append(prediction)
             preds = torch.cat(train_preds, 0)
             train_preds_distill.append(preds)
             print("The size of train_preds is: ", preds.size())
@@ -422,11 +433,15 @@ def run_classifier():
         model.eval()
         val_preds = []
         with torch.no_grad():            
-          for input_ids, seg_ids, atten_masks, mask_pos, target in valloader:
-            pred1 = model(input_ids, seg_ids, atten_masks, mask_pos)
-            val_preds.append(pred1)
+          for input_ids, attention_mask, label, target in valloader:
+            pred1 = model(input_ids, attention_mask, label, False)
+            if pred1 in labels_map.values():
+              prediction = list(labels_map.keys())[list(labels_map.values()).index(pred1)]
+            else:
+              prediction = 1
+            val_preds.append(prediction)
           pred1 = torch.cat(val_preds, 0)
-          acc, f1_average, precision, recall, _ = model_eval.compute_f1(pred1,y_val, False)
+          acc, f1_average, precision, recall = model_eval.compute_f1(pred1,y_val)
           val_f1_average.append(f1_average)
                 
         # evaluation on test set
@@ -434,9 +449,13 @@ def run_classifier():
         
         with torch.no_grad():
           test_preds = []
-          for input_ids, seg_ids, atten_masks, mask_pos, target in testloader:
-            pred1 = model(input_ids, seg_ids, atten_masks, mask_pos)
-            test_preds.append(pred1)
+          for input_ids, attention_mask, label, target in testloader:
+            pred1 = model(input_ids, attention_mask, label, False) #, do_sample=False) # disable sampling to test if batching affects output
+            if pred1 in labels_map.values():
+              prediction = list(labels_map.keys())[list(labels_map.values()).index(pred1)]
+            else:
+              prediction = 1
+            test_preds.append(prediction)
           pred1 = torch.cat(test_preds, 0)          
           pred1_list_a = dh.sep_test_set(pred1)          
                 
@@ -453,7 +472,7 @@ def run_classifier():
       
       if model_name == 'teacher':
         best_preds = train_preds_distill[best_epoch]
-        torch.save(best_preds, 'pro_mask_dot_stance_seed{}.pt'.format(seed))
+        torch.save(best_preds, 'flant5_seed{}.pt'.format(seed))
 
       print("******************************************")
       print("dev results with seed {} on all epochs".format(seed))
