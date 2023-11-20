@@ -440,7 +440,7 @@ def run_classifier():
             # else:
             #   prediction = 1
             pred1.item()
-            val_preds.append(prediction)
+            val_preds.append(pred1)
           pred1 = torch.cat(val_preds, 0)
           # acc, f1_average, precision, recall = model_eval.compute_f1(pred1,y_val)
           val_f1_average.append(f1_average)
