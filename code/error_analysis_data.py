@@ -162,6 +162,6 @@ def data_loader(x_all, batch_size, model_select, mode, model_name, **kwargs):
         return y, data_loader
 
 
-def sep_test_set(input_data,dataset_name):
+def sep_test_set(input_data):
     data_list = [input_data[:10238], input_data[10238:12204], input_data[12204:]]
     return data_list
