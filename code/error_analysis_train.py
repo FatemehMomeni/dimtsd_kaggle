@@ -370,78 +370,79 @@ def run_classifier():
       for epoch in range(0, total_epoch):
         print('Epoch:', epoch)
         train_loss, train_loss2 = [], []
-        model.train()                
-        if model_name == 'teacher':
-          for input_ids, attention_mask, label, target in trainloader:
-            optimizer.zero_grad()
-            loss = model(input_ids, attention_mask, label, True)
-            # loss = loss_function(output1, target)            
-            loss.item()
-            # loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), 1)
-            optimizer.step()
-            train_loss.append(loss.item())
-        else:
-          for input_ids, attention_mask, label, target, target2 in trainloader:
-            optimizer.zero_grad()
-            output1 = model(input_ids, attention_mask, label, False)
-            output2 = output1
+        # model.train()                
+        # if model_name == 'teacher':
+        #   for input_ids, attention_mask, label, target in trainloader:
+        #     optimizer.zero_grad()
+        #     loss = model(input_ids, attention_mask, label, True)
+        #     # loss = loss_function(output1, target)            
+        #     loss.item()
+        #     # loss.backward()
+        #     nn.utils.clip_grad_norm_(model.parameters(), 1)
+        #     optimizer.step()
+        #     train_loss.append(loss.item())
+        # else:
+        #   for input_ids, attention_mask, label, target, target2 in trainloader:
+        #     optimizer.zero_grad()
+        #     output1 = model(input_ids, attention_mask, label, False)
+        #     output2 = output1
 
-            # 3. proposed AKD
-            output2 = torch.empty(output1.shape).fill_(0.).cuda()
-            for ind in range(len(target2)):
-              soft = max(F.softmax(target2[ind]))
-              if soft <= theta:
-                rrand = random.uniform(2,3)  # parameter b1 and b2 in paper
-              elif soft < theta+0.2 and soft > theta:  # parameter a1 and a2 are theta and theta+0.2 here 
-                rrand = random.uniform(1,2)
-              else:
-                rrand = 1
-              target2[ind] = target2[ind]/rrand
-              output2[ind] = output1[ind]/rrand
-            target2 = F.softmax(target2)
+        #     # 3. proposed AKD
+        #     output2 = torch.empty(output1.shape).fill_(0.).cuda()
+        #     for ind in range(len(target2)):
+        #       soft = max(F.softmax(target2[ind]))
+        #       if soft <= theta:
+        #         rrand = random.uniform(2,3)  # parameter b1 and b2 in paper
+        #       elif soft < theta+0.2 and soft > theta:  # parameter a1 and a2 are theta and theta+0.2 here 
+        #         rrand = random.uniform(1,2)
+        #       else:
+        #         rrand = 1
+        #       target2[ind] = target2[ind]/rrand
+        #       output2[ind] = output1[ind]/rrand
+        #     target2 = F.softmax(target2)
                 
-            loss = (1-alpha)*loss_function(output1, target) + alpha*loss_function2(F.log_softmax(output2), target2)
-            loss2 = alpha*loss_function2(F.log_softmax(output2), target2)
-            loss.backward()
-            nn.utils.clip_grad_norm_(model.parameters(), 1)
-            optimizer.step()
-            train_loss.append(loss.item())
-            train_loss2.append(loss2.item())
-          sum_loss2.append(sum(train_loss2) / len(x_train))  
-          print(sum_loss2[epoch])
-        sum_loss.append(sum(train_loss) / len(x_train))  
-        print(sum_loss[epoch])
+        #     loss = (1-alpha)*loss_function(output1, target) + alpha*loss_function2(F.log_softmax(output2), target2)
+        #     loss2 = alpha*loss_function2(F.log_softmax(output2), target2)
+        #     loss.backward()
+        #     nn.utils.clip_grad_norm_(model.parameters(), 1)
+        #     optimizer.step()
+        #     train_loss.append(loss.item())
+        #     train_loss2.append(loss2.item())
+        #   sum_loss2.append(sum(train_loss2) / len(x_train))  
+        #   print(sum_loss2[epoch])
+        # sum_loss.append(sum(train_loss) / len(x_train))  
+        # print(sum_loss[epoch])
         
-        if model_name == 'teacher':
-          # train evaluation
-          model.eval()
-          train_preds = []
-          with torch.no_grad():
-            for input_ids, attention_mask, label, target in trainloader_distill:
-              output1 = model(input_ids, attention_mask, label, False)
-              if pred1 in labels_map.values():
-                prediction = list(labels_map.keys())[list(labels_map.values()).index(pred1)]
-              else:
-                prediction = 1
-              train_preds.append(prediction)
-            preds = torch.cat(train_preds, 0)
-            train_preds_distill.append(preds)
-            print("The size of train_preds is: ", preds.size())
+        # if model_name == 'teacher':
+        #   # train evaluation
+        #   model.eval()
+        #   train_preds = []
+        #   with torch.no_grad():
+        #     for input_ids, attention_mask, label, target in trainloader_distill:
+        #       output1 = model(input_ids, attention_mask, label, False)
+        #       if pred1 in labels_map.values():
+        #         prediction = list(labels_map.keys())[list(labels_map.values()).index(pred1)]
+        #       else:
+        #         prediction = 1
+        #       train_preds.append(prediction)
+        #     preds = torch.cat(train_preds, 0)
+        #     train_preds_distill.append(preds)
+        #     print("The size of train_preds is: ", preds.size())
                     
         # evaluation on val set 
-        model.eval()
+        # model.eval()
         val_preds = []
         with torch.no_grad():            
           for input_ids, attention_mask, label, target in valloader:
-            pred1 = model(input_ids, attention_mask, label, False)
-            if pred1 in labels_map.values():
-              prediction = list(labels_map.keys())[list(labels_map.values()).index(pred1)]
-            else:
-              prediction = 1
+            pred1 = model(input_ids, attention_mask, label, True)
+            # if pred1 in labels_map.values():
+            #   prediction = list(labels_map.keys())[list(labels_map.values()).index(pred1)]
+            # else:
+            #   prediction = 1
+            pred1.item()
             val_preds.append(prediction)
           pred1 = torch.cat(val_preds, 0)
-          acc, f1_average, precision, recall = model_eval.compute_f1(pred1,y_val)
+          # acc, f1_average, precision, recall = model_eval.compute_f1(pred1,y_val)
           val_f1_average.append(f1_average)
                 
         # evaluation on test set
