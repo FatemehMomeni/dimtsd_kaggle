@@ -17,7 +17,7 @@ def run_classifier():
   
   # train = pd.read_csv('/content/dimtsd_kaggle/dataset/train_domain.csv', encoding='ISO-8859-1')
   # validation = pd.read_csv('/content/dimtsd_kaggle/dataset/val_domain.csv', encoding='ISO-8859-1')
-  test = pd.read_csv('/content/dimtsd_kaggle/dataset/test_domain.csv', encoding='ISO-8859-1')
+  test = pd.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test_domain.csv', encoding='ISO-8859-1')
   
   # x_train = train['Tweet'].values.tolist()
   # x_train_tar = train['Target'].values.tolist()
