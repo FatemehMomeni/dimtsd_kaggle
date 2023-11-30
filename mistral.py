@@ -34,7 +34,7 @@ def run_classifier():
   y_test = test['Stance'].values.tolist()
   y_test_str = list(map(lambda x: labels_map[x], y_test))
 
-  model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", device_map="auto", torch_dtype=torch.float16, load_in_8bit=True).to('cuda')
+  model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", device_map="auto", load_in_8bit=True)
   tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1") # Mistral-7B-v0.1
 
   print('after calling model and tokenizer')
@@ -44,7 +44,7 @@ def run_classifier():
   for i in range(len(x_test)):
     prompt = f"Given the text '{x_test[i]}' and the target '{x_test_tar[i]}', classify the stance of the text towards the target. Stance options are: favor, against, none. The stance is "
     model_inputs = tokenizer([prompt], return_tensors="pt").to('cuda')
-    # model.to('cuda')
+    model.to('cuda')
     generated_ids = model.generate(**model_inputs, max_new_tokens=100, do_sample=True)
     prediction = tokenizer.batch_decode(generated_ids)[0]
     if prediction == y_test_str[i]:
