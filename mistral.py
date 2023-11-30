@@ -34,7 +34,7 @@ def run_classifier():
   y_test = test['Stance'].values.tolist()
   y_test_str = list(map(lambda x: labels_map[x], y_test))
 
-  model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1").to('cuda')
+  model = AutoModelForCausalLM.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1", device_map="auto", torch_dtype=torch.float16, load_in_8bit=True).to('cuda')
   tokenizer = AutoTokenizer.from_pretrained("mistralai/Mistral-7B-Instruct-v0.1") # Mistral-7B-v0.1
 
   print('after calling model and tokenizer')
