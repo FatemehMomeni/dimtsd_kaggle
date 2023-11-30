@@ -40,7 +40,7 @@ def run_classifier():
   print('after calling model and tokenizer')
 
   correct = 0
-  wrong = pd.DataFrame(columns=['tweet', 'truth', 'prediction'])
+  wrong = {'tweet': list(), 'truth': list(), 'prediction': list()}
   for i in range(len(x_test)):
     prompt = f"Given the text '{x_test[i]}' and the target '{x_test_tar[i]}', classify the stance of the text towards the target. Stance options are: favor, against, none. The stance is "
     model_inputs = tokenizer([prompt], return_tensors="pt").to('cuda')
@@ -50,11 +50,14 @@ def run_classifier():
     if prediction == y_test_str[i]:
       correct += 1
     else:
-      wrong = wrong.append({'tweet': x_test[i], 'truth': y_test_str[i], 'prediction': prediction})
+      wrong['tweet'].append(x_test[i])
+      wrong['truth'].append(y_test_str[i])
+      wrong['prediction'].append(prediction)
 
+  wrong_df = pd.DataFrame(wrong)
   print('number of correct predictions: ', correct)
-  print('number of wrong predictions: ', len(wrong))
-  pd.to_csv(wrong, index=False)
+  print('number of wrong predictions: ', len(wrong_df))
+  pd.to_csv(wrong_df, index=False)
 
 
 if __name__ == "__main__":
