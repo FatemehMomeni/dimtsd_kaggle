@@ -83,17 +83,17 @@ y_train_str = list(map(lambda x: labels_map[x], y_train))
 y_val = val['Stance'].values.tolist()
 y_val_str = list(map(lambda x: labels_map[x], y_val))
 for i in range(len(train)):
-  train.loc[i, 'Tweet'] = f"<s>[INST] Given the text '{train.loc[i, 'Tweet']}' and the target '{train.loc[i, 'Target']}', classify the stance of the text towards the target. Stance options are: favor, against, none. The stance is [/INST] ```stance\n{y_train_str[i]}```</s>"
+  train.loc[i, 'Tweet'] = f"[INST] Given the text '{train.loc[i, 'Tweet']}' and the target '{train.loc[i, 'Target']}', classify the stance of the text towards the target. Stance options are: favor, against, none. The stance is [/INST] ```stance\n{y_train_str[i]}```"
 for i in range(len(val)):
-  val.loc[i, 'Tweet'] = f"<s>[INST] Given the text '{val.loc[i, 'Tweet']}' and the target '{val.loc[i, 'Target']}', classify the stance of the text towards the target. Stance options are: favor, against, none. The stance is [/INST] ```stance\n{y_val_str[i]}```</s>"
+  val.loc[i, 'Tweet'] = f"[INST] Given the text '{val.loc[i, 'Tweet']}' and the target '{val.loc[i, 'Target']}', classify the stance of the text towards the target. Stance options are: favor, against, none. The stance is [/INST] ```stance\n{y_val_str[i]}```"
 train.drop(columns=['Target', 'Stance', 'domain'], axis=1, inplace=True)
 train_ds = Dataset.from_pandas(train)
 val.drop(columns=['Target', 'Stance', 'domain'], axis=1, inplace=True)
 val_ds = Dataset.from_pandas(val)
 
 # Load base model(Mistral 7B)
-bnb_config = BitsAndBytesConfig(load_in_4bit= True, bnb_4bit_quant_type= "nf4", bnb_4bit_compute_dtype= torch.bfloat16, bnb_4bit_use_double_quant= False,)
-model = AutoModelForCausalLM.from_pretrained(base_model, quantization_config=bnb_config, device_map={"": 0})
+bnb_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=False,)
+model = AutoModelForCausalLM.from_pretrained(base_model, quantization_config=bnb_config, device_map={"": 0}) #device_map="auto"
 model.config.use_cache = False # silence the warnings. Please re-enable for inference!
 model.config.pretraining_tp = 1
 model.gradient_checkpointing_enable()
@@ -109,8 +109,9 @@ peft_config = LoraConfig(r=16, lora_alpha=16, lora_dropout=0.05, bias="none",
 model = get_peft_model(model, peft_config).to('cuda')
 
 # Training Arguments
-training_arguments = TrainingArguments(output_dir= "/content/outputs", num_train_epochs= 1, per_device_train_batch_size= 10,
-    gradient_accumulation_steps= 2, optim = "paged_adamw_8bit", save_steps= 5000, logging_steps= 30, learning_rate= 2e-5,
+training_arguments = TrainingArguments(output_dir= "/content/outputs", num_train_epochs= 1, per_device_train_batch_size= 10, 
+                                       per_device_eval_batch_size= 10, per_gpu_train_batch_size= 32, per_gpu_eval_batch_size= 32
+    gradient_accumulation_steps= 2, optim = "paged_adamw_8bit", save_steps= 500, logging_steps= 30, learning_rate= 2e-4,
     weight_decay= 0.001, fp16= False, bf16= False, max_grad_norm= 0.3, max_steps= -1, warmup_ratio= 0.3, group_by_length= True,
     lr_scheduler_type= "constant",)
 # Setting sft parameters
@@ -128,8 +129,9 @@ y_test = test['Stance'].values.tolist()
 y_test_str = list(map(lambda x: labels_map[x], y_test))
 correct = 0
 wrong = {'prompt': list(), 'truth': list(), 'pred': list()}
+model.config.use_cache = True
 for i in range(len(test)):
-  prompt = f"<s>[INST] Given the text '{test.loc[i, 'Tweet']}' and the target '{test.loc[i, 'Target']}', classify the stance of the text towards the target. Stance options are: favor, against, none. The stance is [/INST]</s>"
+  prompt = f"[INST] Given the text '{test.loc[i, 'Tweet']}' and the target '{test.loc[i, 'Target']}', classify the stance of the text towards the target. Stance options are: favor, against, none. The stance is [/INST]"
   inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
   streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
   output = model.generate(**inputs, streamer=streamer, max_new_tokens=200)
