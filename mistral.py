@@ -75,8 +75,8 @@ base_model = "bn22/Mistral-7B-Instruct-v0.1-sharded" # "mistralai/Mistral-7B-v0.
 new_model = "mistral_7b"
 
 # Loading a Gath_baize dataset
-train = pandas.read_csv('/kaggle/working/dimtsd_kaggle/dataset/train_domain.csv', encoding='ISO-8859-1')
-val = pandas.read_csv('/kaggle/working/dimtsd_kaggle/dataset/val_domain.csv', encoding='ISO-8859-1')
+train = pandas.read_csv('/content/dimtsd_kaggle/dataset/train_domain.csv', encoding='ISO-8859-1')
+val = pandas.read_csv('/content/dimtsd_kaggle/dataset/val_domain.csv', encoding='ISO-8859-1')
 labels_map = {0: 'against', 1:'none', 2: 'favor'}
 y_train = train['Stance'].values.tolist()
 y_train_str = list(map(lambda x: labels_map[x], y_train))
@@ -93,7 +93,7 @@ val_ds = Dataset.from_pandas(val)
 
 # Load base model(Mistral 7B)
 bnb_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=False,)
-model = AutoModelForCausalLM.from_pretrained(base_model, quantization_config=bnb_config, device_map={"": 0}) #device_map="auto"
+model = AutoModelForCausalLM.from_pretrained(base_model, quantization_config=bnb_config, device_map="auto") #device_map={"": 0}
 model.config.use_cache = False # silence the warnings. Please re-enable for inference!
 model.config.pretraining_tp = 1
 model.gradient_checkpointing_enable()
@@ -102,6 +102,7 @@ tokenizer = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True)
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.add_eos_token = True
 tokenizer.add_bos_token, tokenizer.add_eos_token
+tokenizer.padding_side = "right"
 
 model = prepare_model_for_kbit_training(model)
 peft_config = LoraConfig(r=16, lora_alpha=16, lora_dropout=0.05, bias="none",
@@ -109,14 +110,14 @@ peft_config = LoraConfig(r=16, lora_alpha=16, lora_dropout=0.05, bias="none",
 model = get_peft_model(model, peft_config).to('cuda')
 
 # Training Arguments
-training_arguments = TrainingArguments(output_dir= "/content/outputs", num_train_epochs= 1, per_device_train_batch_size= 10, 
-                                       per_device_eval_batch_size= 10, per_gpu_train_batch_size= 32, per_gpu_eval_batch_size= 32
+training_arguments = TrainingArguments(output_dir= "/content/outputs", num_train_epochs= 1, per_device_train_batch_size= 16, 
+                                       per_device_eval_batch_size= 16,
     gradient_accumulation_steps= 2, optim = "paged_adamw_8bit", save_steps= 500, logging_steps= 30, learning_rate= 2e-4,
     weight_decay= 0.001, fp16= False, bf16= False, max_grad_norm= 0.3, max_steps= -1, warmup_ratio= 0.3, group_by_length= True,
     lr_scheduler_type= "constant",)
 # Setting sft parameters
 trainer = SFTTrainer(model=model, train_dataset=train_ds, eval_dataset=val_ds, peft_config=peft_config, max_seq_length= None,
-    dataset_text_field="Tweet", tokenizer=tokenizer, args=training_arguments, packing= False,)
+    dataset_text_field="Tweet", tokenizer=tokenizer, args=training_arguments, packing= False)
 trainer.train()
 # Save the fine-tuned model
 trainer.model.save_pretrained(new_model)
@@ -124,7 +125,7 @@ model.config.use_cache = True
 model.eval()
 
 
-test = pandas.read_csv('/kaggle/working/dimtsd_kaggle/dataset/test_domain.csv', encoding='ISO-8859-1')
+test = pandas.read_csv('/content/dimtsd_kaggle/dataset/test_domain.csv', encoding='ISO-8859-1')
 y_test = test['Stance'].values.tolist()
 y_test_str = list(map(lambda x: labels_map[x], y_test))
 correct = 0
