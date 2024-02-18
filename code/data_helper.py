@@ -3,76 +3,69 @@ from torch.utils.data import TensorDataset, DataLoader
 from transformers import BertTokenizer, AutoTokenizer, BertweetTokenizer
     
     
-def convert_data_to_ids(tokenizer, target, text, domain):
-    input_ids, seg_ids, attention_masks = [], [], []
-    for i in range(len(text)):
-        prompt = f"The stance of text '{text[i]}' towards target '{target[i]}' on domain '{domain[i]}' is [MASK] from the set of 'favor', 'against', 'none'."
-        encoded_pro = tokenizer.encode_plus(prompt, add_special_tokens = True, max_length = 512,
-                            padding = 'max_length', return_attention_mask = True, truncation = True,)                           
-            
-        input_ids.append(encoded_pro['input_ids'])
-        seg_ids.append(encoded_pro['token_type_ids'])
-        attention_masks.append(encoded_pro['attention_mask'])
+def tokenization(tokenizer, target, text, domain):
+  
+  for i in range(len(text)):
+    text[i] = f"The stance of text '{text[i]}' towards target '{target[i]}' on domain '{domain[i]}' is [MASK] from the set of 'favor', 'against', 'none'."
+  
+  tokenized_data = tokenizer(text, max_length = 512, padding = 'max_length', return_attention_mask = True, return_token_type_ids = True, truncation = True, return_tensors = 'pt').to('cuda')
+  
+  return [tokenized_data.input_ids, tokenized_data.token_type_ids, tokenized_data.attention_mask]
+
+
+def data_helper_bert(x_train_all, x_val_all, x_test_all):    
+  print('Loading data')
     
-    return input_ids, seg_ids, attention_masks
-
-
-def data_helper_bert(x_train_all,x_val_all,x_test_all,main_task_name,model_select):    
-    print('Loading data')
+  x_train, x_train_target, x_train_domain, y_train = x_train_all[0], x_train_all[1], x_train_all[2], x_train_all[3]
+  x_val, x_val_target, x_val_domain, y_val = x_val_all[0], x_val_all[1], x_val_all[2], x_val_all[3]
+  x_test, x_test_target, x_test_domain, y_test = x_test_all[0], x_test_all[1], x_test_all[2], x_test_all[3]
     
-    x_train,y_train,x_train_target, x_train_d = x_train_all[0],x_train_all[1],x_train_all[2],x_train_all[3]
-    x_val,y_val,x_val_target, x_val_d = x_val_all[0],x_val_all[1],x_val_all[2],x_val_all[3]
-    x_test,y_test,x_test_target, x_test_d = x_test_all[0],x_test_all[1],x_test_all[2],x_test_all[3]
+  print(f"Length of original x_train: {len(x_train)}")
+  print(f"Length of original x_val: {len(x_val)},\t the sum is: {sum(y_val)}")
+  print(f"Length of original x_test: {len(x_test)},\t the sum is: {sum(y_test)}")
     
-    print("Length of original x_train: %d"%(len(x_train)))
-    print("Length of original x_val: %d, the sum is: %d"%(len(x_val), sum(y_val)))
-    print("Length of original x_test: %d, the sum is: %d"%(len(x_test), sum(y_test)))
+  tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True, mask_token='[MASK]')
+
+  x_train_all = tokenization(tokenizer, x_train_target, x_train, x_train_domain)
+  x_val_all = tokenization(tokenizer, x_val_target, x_val, x_val_domain)
+  x_test_all = tokenization(tokenizer, x_test_target, x_test, x_test_domain)
     
-    if model_select == 'Bertweet':
-        tokenizer = BertweetTokenizer.from_pretrained("vinai/bertweet-base", normalization=True, mask_token='[MASK]')
-    elif model_select == 'Bert':
-        tokenizer = BertTokenizer.from_pretrained("bert-base-uncased", do_lower_case=True, mask_token='[MASK]')
-
-    x_train_input_ids, x_train_seg_ids, x_train_atten_masks = \
-                    convert_data_to_ids(tokenizer, x_train_target, x_train, x_train_d)
-    x_val_input_ids, x_val_seg_ids, x_val_atten_masks = \
-                    convert_data_to_ids(tokenizer, x_val_target, x_val, x_val_d)
-    x_test_input_ids, x_test_seg_ids, x_test_atten_masks = \
-                    convert_data_to_ids(tokenizer, x_test_target, x_test, x_test_d)
-    
-    x_train_all = [x_train_input_ids,x_train_seg_ids,x_train_atten_masks,y_train]
-    x_val_all = [x_val_input_ids,x_val_seg_ids,x_val_atten_masks,y_val]
-    x_test_all = [x_test_input_ids,x_test_seg_ids,x_test_atten_masks,y_test]
-    
-    print(len(x_train), sum(y_train))
-    print("Length of final x_train: %d"%(len(x_train)))
-    
-    return x_train_all,x_val_all,x_test_all
+  x_train_all.append(y_train)
+  x_val_all.append(y_val)
+  x_test_all.append(y_test)
+  
+  return x_train_all, x_val_all, x_test_all
 
 
-def data_loader(x_all, batch_size, model_select, mode, model_name, **kwargs):
-    x_input_ids = torch.tensor(x_all[0], dtype=torch.long).cuda()
-    x_seg_ids = torch.tensor(x_all[1], dtype=torch.long).cuda()
-    x_atten_masks = torch.tensor(x_all[2], dtype=torch.long).cuda()
-    y = torch.tensor(x_all[3], dtype=torch.long).cuda()
+def data_loader(x_all, batch_size, mode, **kwargs):
+  input_ids = x_all[0]
+  token_type_ids = x_all[1]
+  attention_mask = x_all[2]
+  y = torch.tensor(x_all[3], dtype=torch.long).to('cuda')
 
-    if model_name == 'student' and mode == 'train':
-        y2 = torch.tensor(kwargs['y_train2'], dtype=torch.float).cuda()  # load teacher predictions
-        tensor_loader = TensorDataset(x_input_ids,x_seg_ids,x_atten_masks,y,y2)
-    else:
-        tensor_loader = TensorDataset(x_input_ids,x_seg_ids,x_atten_masks,y)
+  tensor_loader = TensorDataset(input_ids, token_type_ids, attention_mask, y)
 
-    if mode == 'train':
-        data_loader = DataLoader(tensor_loader, shuffle=True, batch_size=batch_size)
-        data_loader_distill = DataLoader(tensor_loader, shuffle=False, batch_size=batch_size)
-
-        return y, data_loader, data_loader_distill
-    else:
-        data_loader = DataLoader(tensor_loader, shuffle=False, batch_size=batch_size)
-
-        return y, data_loader
+  if mode == 'train':
+    data_loader = DataLoader(tensor_loader, shuffle=True, batch_size=batch_size) # for training
+    data_loader_distill = DataLoader(tensor_loader, shuffle=False, batch_size=batch_size) # for evaluation
+    return y, data_loader, data_loader_distill
+  
+  else:
+    data_loader = DataLoader(tensor_loader, shuffle=False, batch_size=batch_size)
+    return y, data_loader
 
 
-def sep_test_set(input_data,dataset_name):
-    data_list = [input_data[:10238], input_data[10238:12204], input_data[12204:]]
-    return data_list
+def sep_test_set(input_data, unique_input):
+
+  target_indices, data_list = [], []
+  # find unique targets and their indices
+  for unique in set(unique_input):
+    target_indices.append(unique_input.index(unique))
+  target_indices = sorted(target_indices)
+  
+  for i in range(len(target_indices)-1):
+    data_list.append(input_data[target_indices[i] : target_indices[i+1]])
+  data_list.append(input_data[target_indices[-1]:])  
+  
+  return data_list
+
