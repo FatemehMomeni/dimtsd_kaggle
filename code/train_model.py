@@ -17,18 +17,24 @@ def run_classifier():
 
   # get inputs
   parser = argparse.ArgumentParser()
+  parser.add_argument("--test_set_path", type=str, default='../dataset/raw_test_all_dataset_onecol.csv')
   parser.add_argument("--label_column", type=str, default='Stance 1')
+  parser.add_argument("--text_column", type=str, default='Tweet')
+  parser.add_argument("--target_column", type=str, default='Target 1')
   parser.add_argument("--learning_rate", type=float, default=2e-5)
   parser.add_argument("--batch_size", type=int, default=32)
   parser.add_argument("--epochs", type=int, default=5)
   args = parser.parse_args()
-  
-  column_name = args.label_column
+    
+  test_set = args.test_set_path
+  label_column = args.label_column
+  text_column = args.text_column
+  target_column = args.target_column
   lr = args.learning_rate
   batch_size = args.batch_size
   total_epoch = args.epochs
   random_seeds = [1,2,4,5,9,10]
-  
+
   # create normalization dictionary for preprocessing
   with open("./noslang_data.json", "r") as f:
     data1 = json.load(f)
@@ -40,43 +46,38 @@ def run_classifier():
       data2[row[0]] = row[1].rstrip()
   normalization_dict = {**data1,**data2}
 
+  train_file = '../dataset/raw_train_all_dataset_onecol.csv'
+  eval_file = '../dataset/raw_val_all_dataset_onecol.csv'
+  test_file = '../dataset/raw_test_generalization_all_dataset_onecol.csv'
+  # train = train.sample(frac=0.5)
+
+  # preprocess data
+  x_train, x_train_target, y_train = pp.clean_all(train_file, label_column, normalization_dict)
+  x_val, x_val_target, y_val = pp.clean_all(eval_file, label_column, normalization_dict)
+  x_test, x_test_target, y_test = pp.clean_all(test_file, label_column, normalization_dict)
+  y_unique_test = y_test # save list type of y_test for separating test set in sep_test_set function
+
+  num_labels = len(set(y_val))
+  x_train_all = [x_train, x_train_target, y_train]
+  x_val_all = [x_val, x_val_target, y_val]
+  x_test_all = [x_test, x_test_target, y_test]
 
   best_result, best_val = [], []
   for seed in random_seeds:    
-    print("current random seed: ", seed)
-
-    train_file = '../datasets/train.csv'
-    eval_file = '../datasets/val.csv'
-    test_file = '../dataset/test.csv'
-    # train = train.sample(frac=0.5)
-
-    # preprocess data
-    x_train, x_train_target, y_train = pp.clean_all(train_file, column_name, normalization_dict)
-    x_val, x_val_target, y_val = pp.clean_all(eval_file, column_name, normalization_dict)
-    x_test, x_test_target, y_test = pp.clean_all(test_file, column_name, normalization_dict)
-    y_unique_test = y_test # save list type of y_test for separating test set in sep_test_set function
-
-    # TO DO
-    # topic modeling for obtaining domain
-
-    num_labels = len(set(y_val))
-    x_train_all = [x_train, x_train_target, x_train_domain, y_train]
-    x_val_all = [x_val, x_val_target, x_val_domain, y_val]
-    x_test_all = [x_test, x_test_target, x_test_domain, y_test]
-      
+    print("current random seed: ", seed)  
+    
     # set up the random seed
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed) 
 
-    # prepare for model
-    x_train_all, x_val_all, x_test_all = dh.data_helper_bert(x_train_all,x_val_all,x_test_all)
-    
-    y_train, trainloader, trainloader_distill = dh.data_loader(x_train_all, batch_size, 'train')
-    y_val, valloader =  dh.data_loader(x_val_all, batch_size, 'val')
-    y_test, testloader = dh.data_loader(x_test_all, batch_size, 'test')
+    model = modeling.stance_classifier(num_labels).to('cuda')    
 
-    model = modeling.stance_classifier(num_labels).to('cuda')
+    # prepare for model
+    train_all, val_all, test_all = dh.data_helper_bert(x_train_all,x_val_all,x_test_all, model, batch_size)
+    y_train, trainloader, trainloader_distill = train_all[0], train_all[1], train_all[2]
+    y_val, valloader =  val_all[0], val_all[1]
+    y_test, testloader = test_all[0], test_all[1]
 
     for n,p in model.named_parameters():
       if "bert.embeddings" in n:
@@ -103,7 +104,7 @@ def run_classifier():
       model.train()
       for input_ids, token_type_ids, attention_mask, target in trainloader:
         optimizer.zero_grad()
-        output = model(input_ids, token_type_ids, attention_mask)
+        output = model(False, input_ids, token_type_ids, attention_mask)
         loss = loss_function(output, target)
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), 1)
@@ -118,7 +119,7 @@ def run_classifier():
       train_preds = list()
       with torch.no_grad():
         for input_ids, token_type_ids, attention_mask, target in trainloader_distill:
-          output = model(input_ids, token_type_ids, attention_mask)
+          output = model(False, input_ids, token_type_ids, attention_mask)
           train_preds.append(output)
         preds = torch.cat(train_preds, 0)
         train_preds_distill.append(preds)
@@ -128,7 +129,7 @@ def run_classifier():
       val_preds = list()
       with torch.no_grad():
         for input_ids, token_type_ids, attention_mask, target in valloader:
-          prediction = model(input_ids, token_type_ids, attention_mask)
+          prediction = model(False, input_ids, token_type_ids, attention_mask)
           val_preds.append(prediction)
         prediction = torch.cat(val_preds, 0)
         acc, f1_average, precision, recall = model_eval.compute_f1(prediction, y_val)
@@ -139,7 +140,7 @@ def run_classifier():
       with torch.no_grad():
         test_preds = list()
         for input_ids, token_type_ids, attention_mask, target in testloader:
-          prediction = model(input_ids, token_type_ids, attention_mask)
+          prediction = model(False, input_ids, token_type_ids, attention_mask)
           test_preds.append(prediction)
         prediction = torch.cat(test_preds, 0)
         prediction_list = dh.sep_test_set(prediction, y_unique_test)
