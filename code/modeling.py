@@ -14,12 +14,17 @@ class stance_classifier(nn.Module):
     self.out = nn.Linear(self.bert.config.hidden_size, num_labels) 
           
       
-  def forward(self, input_ids, token_type_ids, attention_mask):
-    last_hidden = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
-    cls = last_hidden[0][:,0]
-    query = self.dropout(cls)
-    linear = self.relu(self.linear(query))
-    out = self.out(linear)
+  def forward(self, embedding, input_ids, token_type_ids, attention_mask):
+    if embedding:
+      last_hidden = self.bert(input_ids=input_ids, attention_mask=attention_mask)
+      word_embed = last_hidden[0][:,1]      
+      return word_embed
       
-    return out
+    else:
+      last_hidden = self.bert(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
+      cls = last_hidden[0][:,0]
+      query = self.dropout(cls)
+      linear = self.relu(self.linear(query))
+      out = self.out(linear)        
+      return out
         
