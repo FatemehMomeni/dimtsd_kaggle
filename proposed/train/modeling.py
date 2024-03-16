@@ -13,7 +13,9 @@ class StanceClassifier(nn.Module):
         self.bert.pooler = None
         self.linear = nn.Linear(num_labels['multi'] * 2, batch)
         self.out = nn.Linear(batch, 2)
-        self.lv = label_vectors
+        self.pad = torch.tensor([-1 for _ in range(512)], dtype=torch.long).to('cuda')
+        self.lv = torch.cat(label_vectors, 0)
+        self.lv = torch.transpose(self.lv, 0, 1)
 
     def forward(self, embedding, input_ids, attention_mask, mask_position,
                 input_ids2, attention_mask2, mask_position2):
@@ -33,18 +35,21 @@ class StanceClassifier(nn.Module):
                 h_mask = torch.unsqueeze(h_mask, 0)
                 similarity = torch.cat((similarity, torch.tensordot(h_mask, self.lv, dims=1)), 0)  # output size = 1*3
 
-                if input_ids2[i] != -1:
+                if not (input_ids2[i] == self.pad).all():
                     h_mask2 = last_hidden2[i, mask_position2[i]]
                     h_mask2 = self.dropout(h_mask2)
                     h_mask2 = torch.unsqueeze(h_mask2, 0)
                     similarity2 = torch.cat((similarity2, torch.tensordot(h_mask2, self.lv, dims=1)), 0)
 
             similarity = similarity[1:]  # remove first row
-            similarity2 = similarity2[1:]
-            context_vec = torch.cat((similarity, similarity2), dim=1)
-            linear2 = self.relu(self.linear2(context_vec))
-            out2 = self.out2(linear2)
-            # out2 = None
+            if (similarity2 == torch.zeros(1, 3).to('cuda').all():
+                out2 = None
+            else:
+                similarity2 = similarity2[1:]
+                context_vec = torch.cat((similarity, similarity2), dim=1)
+                linear2 = self.relu(self.linear(context_vec))
+                out2 = self.out(linear2)
+            
             return similarity, out2
 
             # if input_ids2:
