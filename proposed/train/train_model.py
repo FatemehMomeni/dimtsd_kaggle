@@ -130,7 +130,7 @@ def run_classifier():
                 output1, output2 = model(False, input_ids, attention_mask, mask_position,
                                          input_ids2, attention_mask2, mask_position2)
                 loss = loss_function(output1, label1)
-                if input_ids2:
+                if output2:
                     loss2 = loss_function(output2, label2)
                     loss = loss + loss2 * alpha
                 loss.backward()
