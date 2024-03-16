@@ -82,6 +82,7 @@ def tokenization(tokenizer, prompt1: [str], prompt2: [str], y1: [int], y2: [int]
     input_ids, attention_masks, mask_position = {1: [], 2: []}, {1: [], 2: []}, {1: [], 2: []}
     mak_token = tokenizer.mask_token_id
     prompt2_len = len(prompt2)
+    prompt2_pad = [-1 for _ in range(512)]
 
     for i in range(len(prompt1)):
         encoded1 = tokenizer(prompt1[i], max_length=512, padding='max_length', return_attention_mask=True, truncation=True)
@@ -95,8 +96,8 @@ def tokenization(tokenizer, prompt1: [str], prompt2: [str], y1: [int], y2: [int]
             attention_masks[2].append(encoded2.attention_mask)
             mask_position[2].append(input_ids[2][i].index(mak_token))
         else:
-            input_ids[2].append(-1)
-            attention_masks[2].append(-1)
+            input_ids[2].append(prompt2_pad)
+            attention_masks[2].append(prompt2_pad)
             mask_position[2].append(-1)
 
     input_ids = torch.tensor(input_ids[1], dtype=torch.long).to('cuda')
@@ -111,11 +112,9 @@ def tokenization(tokenizer, prompt1: [str], prompt2: [str], y1: [int], y2: [int]
         y_2.append(-1)
     y_2 = torch.tensor(y_2, dtype=torch.long).to('cuda')
     y1 = torch.tensor(y1, dtype=torch.long).to('cuda')
-    # print(input_ids.size(), '\n', attention_masks.size(), '\n', mask_position.size(), '\n', y1.size())
-    # print(input_ids2.size(), '\n', attention_masks2.size(), '\n', mask_position2.size(), '\n', y_2.size())
+    
     tensor_loader = TensorDataset(input_ids, attention_masks, mask_position, y1,
                                   input_ids2, attention_masks2, mask_position2, y_2)
-
     data_loader_eval = None
     data_loader = DataLoader(tensor_loader, shuffle=False, batch_size=batch_size)
     if mode == 'train':
