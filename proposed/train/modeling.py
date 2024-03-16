@@ -42,7 +42,7 @@ class StanceClassifier(nn.Module):
                     similarity2 = torch.cat((similarity2, torch.tensordot(h_mask2, self.lv, dims=1)), 0)
 
             similarity = similarity[1:]  # remove first row
-            if (similarity2 == torch.zeros(1, 3).to('cuda').all():
+            if (similarity2 == torch.zeros(1, 3).to('cuda')).all():
                 out2 = None
             else:
                 similarity2 = similarity2[1:]
