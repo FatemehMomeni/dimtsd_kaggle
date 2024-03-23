@@ -89,7 +89,7 @@ def run_classifier():
         model = modeling.StanceClassifier(num_labels, batch_size, classes).to('cuda')
 
         # prepare for model
-        y1_train, y2_train, train_loader, train_loader_eval = dh.data_helper_bert(train_all, model, batch_size, 'train')
+        y1_train, y2_train, train_loader, train_loader_train = dh.data_helper_bert(train_all, model, batch_size, 'train')
         # y_train_multi, train_loader_multi = dh.data_helper_bert(train_multi, model, batch_size, 'train')
         y1_val, y2_val, val_loader, _ = dh.data_helper_bert(val_all, model, batch_size, 'val')
         # y_val_multi, val_loader_multi = dh.data_helper_bert(val_multi, model, batch_size, 'val')
@@ -125,12 +125,13 @@ def run_classifier():
             train_loss = list()
             model.train()
             for input_ids, attention_mask, mask_position, label1, input_ids2, attention_mask2, mask_position2, label2 \
-                    in train_loader:
+                    in train_loader_train:
                 optimizer.zero_grad()
                 output1, output2 = model(False, input_ids, attention_mask, mask_position,
                                          input_ids2, attention_mask2, mask_position2)
                 loss = loss_function(output1, label1)
                 if output2 is not None:
+                    label2 = label2[label2 != -1]
                     loss2 = loss_function(output2, label2)
                     loss = loss + loss2 * alpha
                 loss.backward()
@@ -145,7 +146,7 @@ def run_classifier():
             train_predictions = list()
             with torch.no_grad():
                 for input_ids, attention_mask, mask_position, label1, \
-                        input_ids2, attention_mask2, mask_position2, label2 in train_loader_eval:
+                        input_ids2, attention_mask2, mask_position2, label2 in train_loader:
                     prediction, _ = model(False, input_ids, attention_mask, mask_position,
                                           input_ids2, attention_mask2, mask_position2)
                     train_predictions.append(prediction)
