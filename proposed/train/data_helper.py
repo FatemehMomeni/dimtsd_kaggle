@@ -80,9 +80,9 @@ def tokenization(tokenizer, prompt1: [str], prompt2: [str], y1: [int], y2: [int]
     :return: a TensorDataset and a tensor of labels
     '''
     input_ids, attention_masks, mask_position = {1: [], 2: []}, {1: [], 2: []}, {1: [], 2: []}
-    mak_token = tokenizer.mask_token_id
+    mask_token = tokenizer.mask_token_id
     prompt2_len = len(prompt2)
-    prompt2_pad = [-1 for _ in range(512)]
+    prompt2_pad = [0 for _ in range(512)]
 
     for i in range(len(prompt1)):
         encoded1 = tokenizer(prompt1[i], max_length=512, padding='max_length', return_attention_mask=True, truncation=True)
@@ -98,7 +98,7 @@ def tokenization(tokenizer, prompt1: [str], prompt2: [str], y1: [int], y2: [int]
         else:
             input_ids[2].append(prompt2_pad)
             attention_masks[2].append(prompt2_pad)
-            mask_position[2].append(-1)
+            mask_position[2].append(0)
 
     input_ids1 = torch.tensor(input_ids[1], dtype=torch.long).to('cuda')
     attention_masks1 = torch.tensor(attention_masks[1], dtype=torch.long).to('cuda')
@@ -115,12 +115,12 @@ def tokenization(tokenizer, prompt1: [str], prompt2: [str], y1: [int], y2: [int]
     
     tensor_loader = TensorDataset(input_ids1, attention_masks1, mask_position1, y1,
                                   input_ids2, attention_masks2, mask_position2, y_2)
-    data_loader_eval = None
+    data_loader_train = None
     data_loader = DataLoader(tensor_loader, shuffle=False, batch_size=batch_size)
     if mode == 'train':
-        data_loader_eval = DataLoader(tensor_loader, shuffle=True, batch_size=batch_size)
+        data_loader_train = DataLoader(tensor_loader, shuffle=True, batch_size=batch_size)
 
-    return y1, y2, data_loader, data_loader_eval
+    return y1, y2, data_loader, data_loader_train
 
 
 def data_helper_bert(data: list, model, batch_size: int, mode: str):
