@@ -88,13 +88,13 @@ def tokenization(tokenizer, prompt1: [str], prompt2: [str], y1: [int], y2: [int]
         encoded1 = tokenizer(prompt1[i], max_length=512, padding='max_length', return_attention_mask=True, truncation=True)
         input_ids[1].append(encoded1.input_ids)
         attention_masks[1].append(encoded1.attention_mask)
-        mask_position[1].append(input_ids[1][i].index(mak_token))
+        mask_position[1].append(input_ids[1][i].index(mask_token))
 
         if i < prompt2_len:
             encoded2 = tokenizer(prompt2[i], max_length=512, padding='max_length', return_attention_mask=True, truncation=True)
             input_ids[2].append(encoded2.input_ids)
             attention_masks[2].append(encoded2.attention_mask)
-            mask_position[2].append(input_ids[2][i].index(mak_token))
+            mask_position[2].append(input_ids[2][i].index(mask_token))
         else:
             input_ids[2].append(prompt2_pad)
             attention_masks[2].append(prompt2_pad)
