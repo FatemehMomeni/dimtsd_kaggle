@@ -45,7 +45,7 @@ def data_clean(strings: str, norm_dict: dict):
     return clean_data
 
 
-def clean_all(filename: str, column_name: list, norm_dict: dict):
+def clean_all(filename: str, column_name: str, norm_dict: dict):
     '''
     load and clean csv files
     :param filename: path of csv file
