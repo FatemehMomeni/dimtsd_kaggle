@@ -6,7 +6,7 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
-def load_data(filename: str, column_name: list):
+def load_data(filename: str, column_name: str):
     '''
     load all data as DataFrame type
     :param filename: path of csv file
