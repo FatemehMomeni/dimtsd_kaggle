@@ -32,7 +32,7 @@ def get_domain(model, target: [str]):
             encoded = model.tokenizer(t, is_split_into_words=True, max_length=128, padding='max_length', return_attention_mask=True, return_tensors='pt').to('cuda')
             embeds = model(True, encoded.input_ids, encoded.attention_mask)
             scores = torch.cosine_similarity(embeds, prototype_tensor)
-            index = (scores == max(scores)).nonzero(as_tuple=True)[0][0]  # first [0] as tuple has one element, second [0] first occuerrence
+            index = (scores == max(scores)).nonzero(as_tuple=True)[0][0]  # first [0] as tuple has one element, second [0] first occurrence
             domain[t] = domain_names[index]
 
     tar_domains = ['' for _ in range(len(target))]
